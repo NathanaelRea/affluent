@@ -30,7 +30,7 @@ import { useState } from "react";
 import { DataTable } from "./components/expenses/data-table";
 import { expenseColumns } from "./components/expenses/columns";
 import { Label } from "./components/ui/label";
-import { formatMoney } from "./lib/utils";
+import { formatMoney, secantMethod } from "./lib/utils";
 
 const COL_CATEGORIES = [
   "Housing",
@@ -127,15 +127,19 @@ function App() {
   );
 }
 
+function blackBox(formBase: Form, localNetTakeHomePay: number) {
+  return (x: number) => {
+    const form = {
+      ...formBase,
+      salary: x,
+    };
+    return calculateNetTakeHomePay(form) - localNetTakeHomePay;
+  };
+}
+
 function Results({ data }: { data: Form }) {
   const convertedData = data && {
     ...data,
-    salary: convertCostOfLiving(
-      data.salary,
-      data.city,
-      "San Francisco",
-      "Housing"
-    ),
     bonus: 0,
     expenses: data.expenses.map((e) => ({
       ...e,
@@ -144,6 +148,13 @@ function Results({ data }: { data: Form }) {
   };
 
   const localNetTakeHomePay = calculateNetTakeHomePay(data);
+  const remoteSalaryNeeded = secantMethod(
+    blackBox(convertedData, localNetTakeHomePay),
+    0,
+    1_000_000
+  );
+
+  convertedData.salary = remoteSalaryNeeded;
   const remoteNetTakeHomePay = calculateNetTakeHomePay(convertedData);
 
   return (
@@ -168,15 +179,6 @@ function Results({ data }: { data: Form }) {
       <Label>Remote Net Take Home Pay (yr, mo)</Label>
       <Input value={formatMoney(remoteNetTakeHomePay)} disabled />
       <Input value={formatMoney(remoteNetTakeHomePay / 12)} disabled />
-      <Label>Net Difference (yr, mo)</Label>
-      <Input
-        value={formatMoney(remoteNetTakeHomePay - localNetTakeHomePay)}
-        disabled
-      />
-      <Input
-        value={formatMoney((remoteNetTakeHomePay - localNetTakeHomePay) / 12)}
-        disabled
-      />
     </div>
   );
 }
