@@ -25,6 +25,15 @@ import { expenseColumns } from "./components/expenses/columns";
 import { Label } from "./components/ui/label";
 import { formatMoney, secantMethod } from "./lib/utils";
 import { Combobox } from "./components/combobox";
+import {
+  ChartConfig,
+  ChartContainer,
+  ChartLegend,
+  ChartLegendContent,
+  ChartTooltip,
+  ChartTooltipContent,
+} from "./components/ui/chart";
+import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from "recharts";
 
 // FIXME value/label object
 const COL_CATEGORIES = [
@@ -160,6 +169,7 @@ function blackBox(formBase: Form, localNetTakeHomePay: number) {
 function convertCOLAndFindSalary(data: Form, remoteCity: City): Form {
   const newData = {
     ...data,
+    city: remoteCity,
     expenses: data.expenses.map((e) => ({
       ...e,
       amount: convertCostOfLiving(e.amount, data.city, remoteCity, e.type),
@@ -198,6 +208,7 @@ function Results({ data }: { data: Form }) {
           setValue={(c) => setRemoteCity(c as City)}
         />
       </div>
+      <Chart localData={data} remoteData={convertedData} />
       <Label>Income</Label>
       <Input value={formatMoney(convertedData.salary)} disabled />
       <Label>Bonus</Label>
@@ -217,6 +228,61 @@ function Results({ data }: { data: Form }) {
       <Input value={formatMoney(remoteNetTakeHomePay)} disabled />
       <Input value={formatMoney(remoteNetTakeHomePay / 12)} disabled />
     </div>
+  );
+}
+
+function Chart({
+  localData,
+  remoteData,
+}: {
+  localData: Form;
+  remoteData: Form;
+}) {
+  const chartData = localData.expenses.map((expense, index) => ({
+    name: expense.name,
+    local: expense.amount,
+    remote: remoteData.expenses[index].amount,
+  }));
+
+  const chartConfig = {
+    local: {
+      label: localData.city,
+      color: "#2563eb",
+    },
+    remote: {
+      label: remoteData.city,
+      color: "#60a5fa",
+    },
+  } satisfies ChartConfig;
+
+  return (
+    <ChartContainer config={chartConfig} className="h-[200px] w-full">
+      <BarChart accessibilityLayer data={chartData}>
+        <CartesianGrid vertical={false} />
+        <YAxis
+          tickLine={false}
+          tickMargin={10}
+          axisLine={false}
+          tickFormatter={formatMoney}
+        />
+        <XAxis
+          dataKey="name"
+          tickLine={false}
+          tickMargin={10}
+          axisLine={false}
+        />
+        <ChartTooltip
+          content={
+            <ChartTooltipContent
+              valueFormatter={(v) => formatMoney(Number(v))}
+            />
+          }
+        />
+        <ChartLegend content={<ChartLegendContent />} />
+        <Bar dataKey="local" fill="var(--color-local)" radius={4} />
+        <Bar dataKey="remote" fill="var(--color-remote)" radius={4} />
+      </BarChart>
+    </ChartContainer>
   );
 }
 
