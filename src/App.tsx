@@ -38,7 +38,7 @@ const COL_CATEGORIES = [
   "Grocery",
   "Utilities",
   "Healthcare",
-  "Entertainment",
+  "Miscellaneous",
 ] as const;
 type Category = (typeof COL_CATEGORIES)[number];
 
@@ -88,8 +88,8 @@ function App() {
       { name: "Food", amount: 300, type: "Grocery" },
       { name: "Utilities", amount: 100, type: "Utilities" },
       { name: "Car", amount: 500, type: "Transportation" },
-      { name: "Entertainment", amount: 100, type: "Entertainment" },
-      { name: "Misc", amount: 100, type: "Entertainment" },
+      { name: "Entertainment", amount: 100, type: "Miscellaneous" },
+      { name: "Misc", amount: 100, type: "Miscellaneous" },
     ],
   };
   const form = useForm<Form>({
@@ -137,30 +137,37 @@ function blackBox(formBase: Form, localNetTakeHomePay: number) {
   };
 }
 
-function Results({ data }: { data: Form }) {
-  const convertedData = data && {
+function convertCOLAndFindSalary(data: Form, remoteCity: City): Form {
+  const newData = {
     ...data,
-    bonus: 0,
     expenses: data.expenses.map((e) => ({
       ...e,
-      amount: convertCostOfLiving(e.amount, data.city, "San Francisco", e.type),
+      amount: convertCostOfLiving(e.amount, data.city, remoteCity, e.type),
     })),
   };
 
   const localNetTakeHomePay = calculateNetTakeHomePay(data);
   const remoteSalaryNeeded = secantMethod(
-    blackBox(convertedData, localNetTakeHomePay),
+    blackBox(newData, localNetTakeHomePay),
     0,
     1_000_000
   );
 
-  convertedData.salary = remoteSalaryNeeded;
+  newData.salary = remoteSalaryNeeded;
+  return newData;
+}
+
+function Results({ data }: { data: Form }) {
+  const [remoteCity, setRemoteCity] = useState<City>(data.city);
+  const convertedData = convertCOLAndFindSalary(data, remoteCity);
+
+  const localNetTakeHomePay = calculateNetTakeHomePay(data);
   const remoteNetTakeHomePay = calculateNetTakeHomePay(convertedData);
 
   return (
     <div>
       <h2 className="text-xl">Results</h2>
-      <CitySelect disabled value="San Francisco" />
+      <CitySelect value={remoteCity} onValueChange={(c) => setRemoteCity(c)} />
       <Label>Income</Label>
       <Input value={formatMoney(convertedData.salary)} disabled />
       <Label>Bonus</Label>
@@ -300,13 +307,15 @@ function calculateTax(income: number, tax: Tax): number {
 
 function CitySelect({
   value,
+  onValueChange,
   disabled = false,
 }: {
   value: City;
+  onValueChange?: (value: City) => void;
   disabled?: boolean;
 }) {
   return (
-    <Select disabled={disabled} value={value}>
+    <Select disabled={disabled} value={value} onValueChange={onValueChange}>
       <SelectTrigger className="w-[180px]">
         <SelectValue placeholder="City" />
       </SelectTrigger>
@@ -465,35 +474,35 @@ const CITIES: CityCombo[] = [
 
 const COST_OF_LIVING: Record<City, CostOfLiving> = {
   "Los Angeles": {
-    Housing: 1.2,
-    Transportation: 1.1,
-    Grocery: 1.1,
-    Utilities: 1.05,
-    Healthcare: 1.1,
-    Entertainment: 1.15,
+    Housing: 233.3,
+    Transportation: 142.6,
+    Grocery: 111.6,
+    Utilities: 113.9,
+    Healthcare: 99.3,
+    Miscellaneous: 117.6,
   },
   "San Francisco": {
-    Housing: 1.5,
-    Transportation: 1.2,
-    Grocery: 1.2,
-    Utilities: 1.1,
-    Healthcare: 1.15,
-    Entertainment: 1.2,
+    Housing: 274.9,
+    Transportation: 147.1,
+    Grocery: 122.8,
+    Utilities: 161.2,
+    Healthcare: 123.9,
+    Miscellaneous: 117.5,
   },
   Philadelphia: {
-    Housing: 0.9,
-    Transportation: 0.95,
-    Grocery: 0.95,
-    Utilities: 0.9,
-    Healthcare: 0.95,
-    Entertainment: 0.9,
+    Housing: 97.4,
+    Transportation: 108.7,
+    Grocery: 103.5,
+    Utilities: 104.4,
+    Healthcare: 89.4,
+    Miscellaneous: 102.9,
   },
   Pittsburgh: {
-    Housing: 0.85,
-    Transportation: 0.9,
-    Grocery: 0.9,
-    Utilities: 0.85,
-    Healthcare: 0.9,
-    Entertainment: 0.85,
+    Housing: 94.9,
+    Transportation: 110,
+    Grocery: 97.4,
+    Utilities: 118.9,
+    Healthcare: 99.5,
+    Miscellaneous: 92.2,
   },
 };
