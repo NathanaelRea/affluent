@@ -19,18 +19,12 @@ import {
   TableHeader,
   TableRow,
 } from "./components/ui/table";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "./components/ui/select";
 import { useState } from "react";
 import { DataTable } from "./components/expenses/data-table";
 import { expenseColumns } from "./components/expenses/columns";
 import { Label } from "./components/ui/label";
 import { formatMoney, secantMethod } from "./lib/utils";
+import { Combobox } from "./components/combobox";
 
 // FIXME value/label object
 const COL_CATEGORIES = [
@@ -115,20 +109,25 @@ function App() {
         <h1 className="text-2xl">Finance thing</h1>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)}>
-            <DumbSelect
+            <Combobox
               disabled
-              value="single"
-              options={TAX_STATUS.map((status) => ({
+              name="status"
+              items={TAX_STATUS.map((status) => ({
                 value: status,
                 label: status,
               }))}
+              value="single"
+              setValue={() => {}}
             />
-            <DumbSelect
+            <Combobox
               disabled
-              value="Philadelphia"
-              options={CITIES.map((c) => {
-                return { value: c.name, label: `${c.name}, ${c.stateAbbr}` };
-              })}
+              name="city"
+              items={CITIES.map((c) => ({
+                label: `${c.name}, ${c.stateAbbr}`,
+                value: c.name,
+              }))}
+              value={"Philadelphia"}
+              setValue={() => {}}
             />
             <h2 className="text-xl">Income</h2>
             <FIELD form={form} formKey="salary" label="Salary" format />
@@ -188,13 +187,17 @@ function Results({ data }: { data: Form }) {
   return (
     <div>
       <h2 className="text-xl">Results</h2>
-      <DumbSelect
-        value={remoteCity}
-        onValueChange={(c) => setRemoteCity(c as City)}
-        options={CITIES.map((c) => {
-          return { value: c.name, label: `${c.name}, ${c.stateAbbr}` };
-        })}
-      />
+      <div>
+        <Combobox
+          name="city"
+          items={CITIES.map((c) => ({
+            label: `${c.name}, ${c.stateAbbr}`,
+            value: c.name,
+          }))}
+          value={remoteCity}
+          setValue={(c) => setRemoteCity(c as City)}
+        />
+      </div>
       <Label>Income</Label>
       <Input value={formatMoney(convertedData.salary)} disabled />
       <Label>Bonus</Label>
@@ -245,18 +248,17 @@ function ExpensesTable({ form }: { form: UseFormReturn<Form> }) {
               <FIELD form={form} formKey={`expenses.${index}.name`} />
             </TableCell>
             <TableCell>
-              <Select value={data.type}>
-                <SelectTrigger className="w-[180px]">
-                  <SelectValue placeholder="Category" />
-                </SelectTrigger>
-                <SelectContent>
-                  {COL_CATEGORIES.map((category) => (
-                    <SelectItem key={category} value={category}>
-                      {category}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <Combobox
+                name="category"
+                items={COL_CATEGORIES.map((category) => ({
+                  label: category,
+                  value: category,
+                }))}
+                value={data.type}
+                setValue={(v) => {
+                  form.setValue(`expenses.${index}.type`, v as Category);
+                }}
+              />
             </TableCell>
             <TableCell>
               <FIELD form={form} formKey={`expenses.${index}.amount`} format />
@@ -332,36 +334,6 @@ function calculateTax(income: number, tax: Tax, status: TaxStatus): number {
     case "flat":
       return income - tax.rate;
   }
-}
-
-function DumbSelect({
-  options,
-  value,
-  onValueChange,
-  disabled = false,
-}: {
-  options: { value: string; label: string }[];
-  value: string;
-  onValueChange?: (value: string) => void;
-  disabled?: boolean;
-}) {
-  return (
-    <Select disabled={disabled} value={value} onValueChange={onValueChange}>
-      <SelectTrigger className="w-[180px]">
-        <SelectValue placeholder="City" />
-      </SelectTrigger>
-      <SelectContent>
-        {options.map((option) => (
-          <SelectItem
-            key={`${option.label}-${option.value}`}
-            value={option.value}
-          >
-            {option.label}
-          </SelectItem>
-        ))}
-      </SelectContent>
-    </Select>
-  );
 }
 
 export default App;

@@ -27,11 +27,19 @@ type Item = {
 type ComboboxProps = {
   items: Item[];
   name: string;
+  value: string;
+  setValue: (value: string) => void;
+  disabled?: boolean;
 };
 
-export function Combobox({ items, name }: ComboboxProps) {
+export function Combobox({
+  items,
+  name,
+  value,
+  setValue,
+  disabled,
+}: ComboboxProps) {
   const [open, setOpen] = React.useState(false);
-  const [value, setValue] = React.useState("");
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
@@ -41,10 +49,11 @@ export function Combobox({ items, name }: ComboboxProps) {
           role="combobox"
           aria-expanded={open}
           className="w-[200px] justify-between"
+          disabled={disabled}
         >
           {value
             ? items.find((item) => item.value === value)?.label
-            : "Select item..."}
+            : `Select ${name}...`}
           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
         </Button>
       </PopoverTrigger>
@@ -66,7 +75,7 @@ export function Combobox({ items, name }: ComboboxProps) {
                   <Check
                     className={cn(
                       "mr-2 h-4 w-4",
-                      value === item.value ? "opacity-100" : "opacity-0",
+                      value === item.value ? "opacity-100" : "opacity-0"
                     )}
                   />
                   {item.label}
