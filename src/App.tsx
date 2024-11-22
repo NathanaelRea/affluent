@@ -32,6 +32,7 @@ import { expenseColumns } from "./components/expenses/columns";
 import { Label } from "./components/ui/label";
 import { formatMoney, secantMethod } from "./lib/utils";
 
+// FIXME value/label object
 const COL_CATEGORIES = [
   "Housing",
   "Transportation",
@@ -56,6 +57,10 @@ const expenseSchema = z.object({
   type: z.enum(COL_CATEGORIES),
 });
 
+// FIXME value/label object
+const TAX_STATUS = ["single", "married", "headOfHousehold"] as const;
+const taxStatusSchema = z.enum(TAX_STATUS);
+
 const stateSchema = z.enum(["CA", "PA"]);
 const citySchema = z.enum([
   "San Francisco",
@@ -65,6 +70,7 @@ const citySchema = z.enum([
 ]);
 const formSchema = z.object({
   city: citySchema,
+  status: taxStatusSchema,
   salary: z.coerce.number(),
   bonus: z.coerce.number(),
   fourOhOneK: z.coerce.number().min(0).max(1),
@@ -78,6 +84,7 @@ function App() {
 
   const defaultValues: Form = {
     city: "Philadelphia",
+    status: "single",
     salary: 100_000,
     bonus: 10_000,
     fourOhOneK: 0.05,
@@ -108,7 +115,21 @@ function App() {
         <h1 className="text-2xl">Finance thing</h1>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)}>
-            <CitySelect disabled value="Philadelphia" />
+            <DumbSelect
+              disabled
+              value="single"
+              options={TAX_STATUS.map((status) => ({
+                value: status,
+                label: status,
+              }))}
+            />
+            <DumbSelect
+              disabled
+              value="Philadelphia"
+              options={CITIES.map((c) => {
+                return { value: c.name, label: `${c.name}, ${c.stateAbbr}` };
+              })}
+            />
             <h2 className="text-xl">Income</h2>
             <FIELD form={form} formKey="salary" label="Salary" format />
             <FIELD form={form} formKey="bonus" label="Bonus" format />
@@ -167,7 +188,13 @@ function Results({ data }: { data: Form }) {
   return (
     <div>
       <h2 className="text-xl">Results</h2>
-      <CitySelect value={remoteCity} onValueChange={(c) => setRemoteCity(c)} />
+      <DumbSelect
+        value={remoteCity}
+        onValueChange={(c) => setRemoteCity(c as City)}
+        options={CITIES.map((c) => {
+          return { value: c.name, label: `${c.name}, ${c.stateAbbr}` };
+        })}
+      />
       <Label>Income</Label>
       <Input value={formatMoney(convertedData.salary)} disabled />
       <Label>Bonus</Label>
@@ -269,9 +296,9 @@ function calculateNetTakeHomePay(data: Form) {
 
   const taxableIncome = preTaxIncome - deductions - fourOhOneKTraditional - hsa;
 
-  const fedTax = calculateTax(taxableIncome, fedRate);
-  const stateTax = calculateTax(taxableIncome, stateRate);
-  const cityTax = calculateTax(taxableIncome, cityRate);
+  const fedTax = calculateTax(taxableIncome, fedRate, data.status);
+  const stateTax = calculateTax(taxableIncome, stateRate, data.status);
+  const cityTax = calculateTax(taxableIncome, cityRate, data.status);
 
   const expenses =
     12 * data.expenses.reduce((acc, { amount }) => acc + amount, 0);
@@ -288,8 +315,10 @@ function calculateNetTakeHomePay(data: Form) {
     expenses
   );
 }
-function calculateTax(income: number, tax: Tax): number {
+function calculateTax(income: number, tax: Tax, status: TaxStatus): number {
   switch (tax.type) {
+    case "status-based":
+      return calculateTax(income, tax.status[status], status);
     case "bracket":
       let taxAmount = 0;
       for (const [bracket, rate] of Object.entries(tax.brackets)) {
@@ -305,13 +334,15 @@ function calculateTax(income: number, tax: Tax): number {
   }
 }
 
-function CitySelect({
+function DumbSelect({
+  options,
   value,
   onValueChange,
   disabled = false,
 }: {
-  value: City;
-  onValueChange?: (value: City) => void;
+  options: { value: string; label: string }[];
+  value: string;
+  onValueChange?: (value: string) => void;
   disabled?: boolean;
 }) {
   return (
@@ -320,9 +351,12 @@ function CitySelect({
         <SelectValue placeholder="City" />
       </SelectTrigger>
       <SelectContent>
-        {CITIES.map((city) => (
-          <SelectItem key={city.name} value={city.name}>
-            {city.name}, {city.stateAbbr}
+        {options.map((option) => (
+          <SelectItem
+            key={`${option.label}-${option.value}`}
+            value={option.value}
+          >
+            {option.label}
           </SelectItem>
         ))}
       </SelectContent>
@@ -371,10 +405,18 @@ function FIELD<T extends FieldValues>({
 }
 
 type StateAbbreviation = z.infer<typeof stateSchema>;
+
+type TaxStatus = z.infer<typeof taxStatusSchema>;
+type Bracket = Record<number, number>;
+
 type Tax =
   | {
+      type: "status-based";
+      status: Record<TaxStatus, Tax>;
+    }
+  | {
       type: "bracket";
-      brackets: Record<number, number>;
+      brackets: Bracket;
     }
   | {
       type: "percentage";
@@ -391,37 +433,105 @@ type FedTax = {
   medicare: number;
   rates: Tax;
 };
+
+// 2024
 const FED_TAX: FedTax = {
   standardDeduction: 12_550,
   socialSecurity: 0.062,
   medicare: 0.0145,
   rates: {
-    type: "bracket",
-    brackets: {
-      // 0: 0,
-      9_950: 0.1,
-      40_525: 0.12,
-      86_375: 0.22,
-      164_925: 0.24,
-      209_425: 0.32,
-      523_600: 0.35,
-      Infinity: 0.37,
+    type: "status-based",
+    status: {
+      single: {
+        type: "bracket",
+        brackets: {
+          11_600: 0.1,
+          47_150: 0.12,
+          100_525: 0.22,
+          191_950: 0.24,
+          243_725: 0.32,
+          609_350: 0.35,
+          Infinity: 0.37,
+        },
+      },
+      married: {
+        type: "bracket",
+        brackets: {
+          23_200: 0.1,
+          94_300: 0.12,
+          201_050: 0.22,
+          383_900: 0.24,
+          487_450: 0.32,
+          731_200: 0.35,
+          Infinity: 0.37,
+        },
+      },
+      headOfHousehold: {
+        type: "bracket",
+        brackets: {
+          16_550: 0.1,
+          63_100: 0.12,
+          100_500: 0.22,
+          191_950: 0.24,
+          243_700: 0.32,
+          609_350: 0.35,
+          Infinity: 0.37,
+        },
+      },
     },
   },
 };
 
 type StateTax = Record<StateAbbreviation, Tax>;
+
+// 2024
 const STATE_TAX: StateTax = {
-  PA: { type: "percentage", rate: 0.05 },
+  PA: { type: "percentage", rate: 0.0307 },
   CA: {
-    type: "bracket",
-    brackets: {
-      // 0: 0.01,
-      20_255: 0.04,
-      44_377: 0.08,
-      286_492: 0.103,
-      572_980: 0.123,
-      1_000_000: 0.133,
+    type: "status-based",
+    status: {
+      single: {
+        type: "bracket",
+        brackets: {
+          10_756: 0.01,
+          25_499: 0.02,
+          40_245: 0.04,
+          55_866: 0.06,
+          70_606: 0.08,
+          360_659: 0.093,
+          432_787: 0.103,
+          721_314: 0.113,
+          Infinity: 0.123,
+        },
+      },
+      married: {
+        type: "bracket",
+        brackets: {
+          21_512: 0.01,
+          50_998: 0.02,
+          80_490: 0.04,
+          111_732: 0.06,
+          141_212: 0.08,
+          721_318: 0.093,
+          865_574: 0.103,
+          1_442_628: 0.113,
+          Infinity: 0.123,
+        },
+      },
+      headOfHousehold: {
+        type: "bracket",
+        brackets: {
+          21_527: 0.01,
+          51_000: 0.02,
+          65_744: 0.04,
+          81_364: 0.06,
+          96_107: 0.08,
+          490_493: 0.093,
+          588_593: 0.103,
+          980_987: 0.113,
+          Infinity: 0.123,
+        },
+      },
     },
   },
 };
@@ -430,29 +540,11 @@ type CityTax = Record<City, Tax>;
 const CITY_TAX: CityTax = {
   "Los Angeles": { type: "percentage", rate: 0 },
   "San Francisco": { type: "percentage", rate: 0 },
-  Philadelphia: { type: "percentage", rate: 0.03 },
-  Pittsburgh: { type: "percentage", rate: 0.02 },
+  Philadelphia: { type: "percentage", rate: 0.0375 },
+  Pittsburgh: { type: "percentage", rate: 0.03 },
 };
 
 type City = z.infer<typeof citySchema>;
-
-type State = {
-  name: string;
-  abbr: StateAbbreviation;
-  cities: City[];
-};
-const STATES: Record<StateAbbreviation, State> = {
-  CA: {
-    name: "California",
-    abbr: "CA",
-    cities: ["San Francisco", "Los Angeles"],
-  },
-  PA: {
-    name: "Pennsylvania",
-    abbr: "PA",
-    cities: ["Philadelphia", "Pittsburgh"],
-  },
-};
 
 const cityToState: Record<City, StateAbbreviation> = {
   "San Francisco": "CA",
