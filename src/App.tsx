@@ -208,19 +208,14 @@ function Results({ data }: { data: Form }) {
           setValue={(c) => setRemoteCity(c as City)}
         />
       </div>
-      <Chart localData={data} remoteData={convertedData} />
       <Label>Income</Label>
       <Input value={formatMoney(convertedData.salary)} disabled />
       <Label>Bonus</Label>
       <Input value={formatMoney(convertedData.bonus)} disabled />
-      <h2 className="text-xl">Expenses</h2>
-      <DataTable
-        columns={expenseColumns}
-        data={convertedData.expenses.map((e) => ({
-          name: e.name,
-          value: e.amount,
-        }))}
-      />
+      <h2 className="text-xl">Overview</h2>
+      <OverviewChart localData={data} remoteData={convertedData} />
+      <h2 className="text-xl">Expenses Breakdown</h2>
+      <ExpensesChart localData={data} remoteData={convertedData} />
       <Label>Local Net Take Home Pay (yr, mo)</Label>
       <Input value={formatMoney(localNetTakeHomePay)} disabled />
       <Input value={formatMoney(localNetTakeHomePay / 12)} disabled />
@@ -231,7 +226,7 @@ function Results({ data }: { data: Form }) {
   );
 }
 
-function Chart({
+function ExpensesChart({
   localData,
   remoteData,
 }: {
@@ -243,6 +238,101 @@ function Chart({
     local: expense.amount,
     remote: remoteData.expenses[index].amount,
   }));
+
+  const chartConfig = {
+    local: {
+      label: localData.city,
+      color: "#2563eb",
+    },
+    remote: {
+      label: remoteData.city,
+      color: "#60a5fa",
+    },
+  } satisfies ChartConfig;
+
+  return (
+    <ChartContainer config={chartConfig} className="h-[200px] w-full">
+      <BarChart accessibilityLayer data={chartData}>
+        <CartesianGrid vertical={false} />
+        <YAxis
+          tickLine={false}
+          tickMargin={10}
+          axisLine={false}
+          tickFormatter={formatMoney}
+        />
+        <XAxis
+          dataKey="name"
+          tickLine={false}
+          tickMargin={10}
+          axisLine={false}
+        />
+        <ChartTooltip
+          content={
+            <ChartTooltipContent
+              valueFormatter={(v) => formatMoney(Number(v))}
+            />
+          }
+        />
+        <ChartLegend content={<ChartLegendContent />} />
+        <Bar dataKey="local" fill="var(--color-local)" radius={4} />
+        <Bar dataKey="remote" fill="var(--color-remote)" radius={4} />
+      </BarChart>
+    </ChartContainer>
+  );
+}
+
+function OverviewChart({
+  localData,
+  remoteData,
+}: {
+  localData: Form;
+  remoteData: Form;
+}) {
+  const localTaxes = calculateTaxesOBJECT(localData);
+  const remoteTaxes = calculateTaxesOBJECT(remoteData);
+
+  const chartData = [
+    {
+      name: "Federal tax",
+      local: localTaxes.fedTax,
+      remote: remoteTaxes.fedTax,
+    },
+    {
+      name: "State tax",
+      local: localTaxes.stateTax,
+      remote: remoteTaxes.stateTax,
+    },
+    {
+      name: "City tax",
+      local: localTaxes.cityTax,
+      remote: remoteTaxes.cityTax,
+    },
+    {
+      name: "Social Security",
+      local: localTaxes.socialSecurity,
+      remote: remoteTaxes.socialSecurity,
+    },
+    {
+      name: "Medicare",
+      local: localTaxes.medicare,
+      remote: remoteTaxes.medicare,
+    },
+    {
+      name: "401(k)",
+      local: localTaxes.fourOhOneK,
+      remote: remoteTaxes.fourOhOneK,
+    },
+    {
+      name: "HSA",
+      local: localTaxes.hsa,
+      remote: remoteTaxes.hsa,
+    },
+    {
+      name: "Expenses",
+      local: localTaxes.expenses,
+      remote: remoteTaxes.expenses,
+    },
+  ];
 
   const chartConfig = {
     local: {
@@ -383,6 +473,45 @@ function calculateNetTakeHomePay(data: Form) {
     expenses
   );
 }
+
+function calculateTaxesOBJECT(data: Form) {
+  // Use separate function, feels wasteful to create objects inside secant method
+  const fedRate = FED_TAX.rates;
+  const state = cityToState[data.city];
+  const stateRate = STATE_TAX[state];
+  const cityRate = CITY_TAX[data.city];
+
+  const preTaxIncome = data.salary + data.bonus;
+  const deductions = FED_TAX.standardDeduction;
+  const socialSecurity = preTaxIncome * FED_TAX.socialSecurity;
+  const medicare = preTaxIncome * FED_TAX.medicare;
+
+  // Assume all trad
+  const fourOhOneK = data.salary * data.fourOhOneK;
+  const hsa = data.hsa;
+
+  const taxableIncome = preTaxIncome - deductions - fourOhOneK - hsa;
+
+  const fedTax = calculateTax(taxableIncome, fedRate, data.status);
+  const stateTax = calculateTax(taxableIncome, stateRate, data.status);
+  const cityTax = calculateTax(taxableIncome, cityRate, data.status);
+
+  const expenses =
+    12 * data.expenses.reduce((acc, { amount }) => acc + amount, 0);
+
+  return {
+    preTaxIncome,
+    fedTax,
+    stateTax,
+    cityTax,
+    socialSecurity,
+    medicare,
+    fourOhOneK,
+    hsa,
+    expenses,
+  };
+}
+
 function calculateTax(income: number, tax: Tax, status: TaxStatus): number {
   switch (tax.type) {
     case "status-based":
