@@ -79,25 +79,43 @@ const formSchema = z.object({
 });
 type Form = z.infer<typeof formSchema>;
 
-function App() {
-  const [data, setData] = useState<Form | null>(null);
+const DEFAULT_VALUES: Form = {
+  city: "Philadelphia",
+  status: "single",
+  salary: 100_000,
+  fourOhOneK: 0.05,
+  hsa: 1_000,
+  expenses: [
+    { name: "Rent", amount: 1_000, type: "Housing" },
+    { name: "Renter's Insurance", amount: 10, type: "Housing" },
+    { name: "Food", amount: 300, type: "Grocery" },
+    { name: "Utilities", amount: 100, type: "Utilities" },
+    { name: "Car", amount: 500, type: "Transportation" },
+    { name: "Entertainment", amount: 100, type: "Miscellaneous" },
+    { name: "Misc", amount: 100, type: "Miscellaneous" },
+  ],
+};
 
-  const defaultValues: Form = {
-    city: "Philadelphia",
-    status: "single",
-    salary: 100_000,
-    fourOhOneK: 0.05,
-    hsa: 1_000,
-    expenses: [
-      { name: "Rent", amount: 1_000, type: "Housing" },
-      { name: "Renter's Insurance", amount: 10, type: "Housing" },
-      { name: "Food", amount: 300, type: "Grocery" },
-      { name: "Utilities", amount: 100, type: "Utilities" },
-      { name: "Car", amount: 500, type: "Transportation" },
-      { name: "Entertainment", amount: 100, type: "Miscellaneous" },
-      { name: "Misc", amount: 100, type: "Miscellaneous" },
-    ],
-  };
+function App() {
+  const defaultValues = loadFromLocalStorage()?.data ?? DEFAULT_VALUES;
+
+  function resetDefaults() {
+    saveToLocalStorage(DEFAULT_VALUES);
+    window.location.reload(); // this is kinda dumb
+  }
+
+  return <Inner defaultValues={defaultValues} resetDefaults={resetDefaults} />;
+}
+
+function Inner({
+  defaultValues,
+  resetDefaults,
+}: {
+  defaultValues: Form | undefined;
+  resetDefaults: () => void;
+}) {
+  const [data, setData] = useState<Form | undefined>(defaultValues);
+
   const form = useForm<Form>({
     resolver: zodResolver(formSchema),
     defaultValues,
@@ -105,13 +123,18 @@ function App() {
 
   const onSubmit = (data: Form) => {
     setData(data);
-    console.log(data);
+    saveToLocalStorage(data);
   };
 
   return (
     <div className="flex flex-col justify-center items-center">
       <main className="flex flex-col max-w-3xl w-full">
         <h1 className="text-2xl">Finance thing</h1>
+        <div>
+          <Button variant="ghost" onClick={resetDefaults}>
+            Clear
+          </Button>
+        </div>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)}>
             <Combobox
@@ -149,6 +172,37 @@ function App() {
       </main>
     </div>
   );
+}
+
+const LOCAL_STORAGE_KEY = "finance-data";
+
+function createLocalStorageWrapperSchema<T extends z.ZodTypeAny>(schema: T) {
+  return z.object({
+    version: z.number(),
+    data: schema,
+  });
+}
+
+const formWrapped = createLocalStorageWrapperSchema(formSchema);
+type FormWrapped = z.infer<typeof formWrapped>;
+
+function saveToLocalStorage(data: Form) {
+  try {
+    const dataWrapped = formWrapped.parse({ version: 1, data });
+    localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(dataWrapped));
+  } catch {
+    console.error("Failed to save to local storage");
+  }
+}
+
+function loadFromLocalStorage(): FormWrapped | undefined {
+  try {
+    const rawData = localStorage.getItem(LOCAL_STORAGE_KEY);
+    if (!rawData) return undefined;
+    return formWrapped.parse(JSON.parse(rawData));
+  } catch {
+    return undefined;
+  }
 }
 
 function blackBox(formBase: Form, localNetTakeHomePay: number) {
