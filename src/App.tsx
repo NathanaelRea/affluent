@@ -20,8 +20,6 @@ import {
   TableRow,
 } from "./components/ui/table";
 import { useState } from "react";
-import { DataTable } from "./components/expenses/data-table";
-import { expenseColumns } from "./components/expenses/columns";
 import { Label } from "./components/ui/label";
 import { formatMoney, secantMethod } from "./lib/utils";
 import { Combobox } from "./components/combobox";
@@ -75,7 +73,6 @@ const formSchema = z.object({
   city: citySchema,
   status: taxStatusSchema,
   salary: z.coerce.number(),
-  bonus: z.coerce.number(),
   fourOhOneK: z.coerce.number().min(0).max(1),
   hsa: z.coerce.number(),
   expenses: z.array(expenseSchema),
@@ -89,7 +86,6 @@ function App() {
     city: "Philadelphia",
     status: "single",
     salary: 100_000,
-    bonus: 10_000,
     fourOhOneK: 0.05,
     hsa: 1_000,
     expenses: [
@@ -140,7 +136,6 @@ function App() {
             />
             <h2 className="text-xl">Income</h2>
             <FIELD form={form} formKey="salary" label="Salary" format />
-            <FIELD form={form} formKey="bonus" label="Bonus" format />
             <FIELD form={form} formKey="fourOhOneK" label="401(k)" />
             <FIELD form={form} formKey="hsa" label="HSA" format />
             <h2 className="text-xl">Expenses</h2>
@@ -208,10 +203,8 @@ function Results({ data }: { data: Form }) {
           setValue={(c) => setRemoteCity(c as City)}
         />
       </div>
-      <Label>Income</Label>
+      <Label>Required Income</Label>
       <Input value={formatMoney(convertedData.salary)} disabled />
-      <Label>Bonus</Label>
-      <Input value={formatMoney(convertedData.bonus)} disabled />
       <h2 className="text-xl">Overview</h2>
       <OverviewChart localData={data} remoteData={convertedData} />
       <h2 className="text-xl">Expenses Breakdown</h2>
@@ -443,7 +436,7 @@ function calculateNetTakeHomePay(data: Form) {
   const stateRate = STATE_TAX[state];
   const cityRate = CITY_TAX[data.city];
 
-  const preTaxIncome = data.salary + data.bonus;
+  const preTaxIncome = data.salary;
   const deductions = FED_TAX.standardDeduction;
   const socialSecurity = preTaxIncome * FED_TAX.socialSecurity;
   const medicare = preTaxIncome * FED_TAX.medicare;
@@ -481,7 +474,7 @@ function calculateTaxesOBJECT(data: Form) {
   const stateRate = STATE_TAX[state];
   const cityRate = CITY_TAX[data.city];
 
-  const preTaxIncome = data.salary + data.bonus;
+  const preTaxIncome = data.salary;
   const deductions = FED_TAX.standardDeduction;
   const socialSecurity = preTaxIncome * FED_TAX.socialSecurity;
   const medicare = preTaxIncome * FED_TAX.medicare;
