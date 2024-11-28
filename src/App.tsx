@@ -114,7 +114,7 @@ function Inner({
   defaultValues: Form | undefined;
   resetDefaults: () => void;
 }) {
-  const [data, setData] = useState<Form | undefined>(defaultValues);
+  const [data, setData] = useState<Form | undefined>();
 
   const form = useForm<Form>({
     resolver: zodResolver(formSchema),
@@ -645,6 +645,8 @@ type FedTax = {
   standardDeduction: number;
   socialSecurity: number;
   medicare: number;
+  hsa: 4_000;
+  roth401k: 7_000;
   rates: Tax;
 };
 
