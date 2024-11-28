@@ -69,22 +69,61 @@ const citySchema = z.enum([
   "Philadelphia",
   "Pittsburgh",
 ]);
-const formSchema = z.object({
-  city: citySchema,
-  status: taxStatusSchema,
-  salary: z.coerce.number(),
-  fourOhOneK: z.coerce.number().min(0).max(1),
-  hsa: z.coerce.number(),
-  expenses: z.array(expenseSchema),
-});
+const formSchema = z
+  .object({
+    city: citySchema,
+    status: taxStatusSchema,
+    age: z.coerce.number(),
+    salary: z.coerce.number(),
+    fourOhOneK: z.coerce.number().min(0).max(1),
+    hsa: z.coerce.number(),
+    rothIRAContribution: z.coerce.number(),
+    expenses: z.array(expenseSchema),
+  })
+  .superRefine((data, ctx) => {
+    const rothLimit = rothIRALimit(data.salary, data.status, data.age);
+    if (data.rothIRAContribution > rothLimit.maxRoth) {
+      ctx.addIssue({
+        message: `Your Roth IRA contribution cannot exceed ${formatMoney(
+          rothLimit.maxRoth
+        )} since your modified AGI is ${formatMoney(rothLimit.modifiedAGI)}`,
+        path: ["rothIRAContribution"],
+        code: "invalid_arguments",
+        argumentsError: new z.ZodError([]),
+      });
+      return;
+    }
+  });
+
+function rothIRALimit(salary: number, status: TaxStatus, age: number) {
+  const standardDeduction = FED_TAX.standardDeduction;
+  const modifiedAGI = salary - standardDeduction;
+  const { range, limit, limit50 } = FED_TAX.rothIRAMaxContribution;
+  const { low, high } = range[status];
+  const maxContributionForAge = age >= 50 ? limit50 : limit;
+  const maxRoth =
+    modifiedAGI <= low
+      ? maxContributionForAge
+      : modifiedAGI >= high
+      ? 0
+      : maxContributionForAge -
+        (modifiedAGI - low) * (maxContributionForAge / (high - low));
+  return {
+    modifiedAGI,
+    maxRoth,
+  };
+}
+
 type Form = z.infer<typeof formSchema>;
 
 const DEFAULT_VALUES: Form = {
   city: "Philadelphia",
   status: "single",
   salary: 100_000,
+  age: 30,
   fourOhOneK: 0.05,
   hsa: 1_000,
+  rothIRAContribution: 4_810,
   expenses: [
     { name: "Rent", amount: 1_000, type: "Housing" },
     { name: "Renter's Insurance", amount: 10, type: "Housing" },
@@ -157,10 +196,17 @@ function Inner({
               value={"Philadelphia"}
               setValue={() => {}}
             />
+            <FIELD form={form} formKey="age" label="Age" />
             <h2 className="text-xl">Income</h2>
             <FIELD form={form} formKey="salary" label="Salary" format />
             <FIELD form={form} formKey="fourOhOneK" label="401(k)" />
             <FIELD form={form} formKey="hsa" label="HSA" format />
+            <FIELD
+              form={form}
+              formKey="rothIRAContribution"
+              label="Roth IRA"
+              format
+            />
             <h2 className="text-xl">Expenses</h2>
             <ExpensesTable form={form} />
             <Button type="submit" onClick={form.handleSubmit(onSubmit)}>
@@ -623,10 +669,12 @@ type StateAbbreviation = z.infer<typeof stateSchema>;
 type TaxStatus = z.infer<typeof taxStatusSchema>;
 type Bracket = Record<number, number>;
 
+type StatusBased<T> = Record<TaxStatus, T>;
+
 type Tax =
   | {
       type: "status-based";
-      status: Record<TaxStatus, Tax>;
+      status: StatusBased<Tax>;
     }
   | {
       type: "bracket";
@@ -641,12 +689,21 @@ type Tax =
       rate: number;
     };
 
+type RangeBased = {
+  low: number;
+  high: number;
+};
+
 type FedTax = {
   standardDeduction: number;
   socialSecurity: number;
   medicare: number;
-  hsa: 4_000;
-  roth401k: 7_000;
+  hsaMaxContribution: StatusBased<number>;
+  rothIRAMaxContribution: {
+    range: StatusBased<RangeBased>;
+    limit: number;
+    limit50: number;
+  };
   rates: Tax;
 };
 
@@ -655,6 +712,20 @@ const FED_TAX: FedTax = {
   standardDeduction: 12_550,
   socialSecurity: 0.062,
   medicare: 0.0145,
+  hsaMaxContribution: {
+    single: 4_150,
+    married: 8_300,
+    headOfHousehold: 8_300,
+  },
+  rothIRAMaxContribution: {
+    range: {
+      single: { low: 146_000, high: 161_000 },
+      married: { low: 230_000, high: 240_000 },
+      headOfHousehold: { low: 146_000, high: 161_000 },
+    },
+    limit: 7_000,
+    limit50: 8_000,
+  },
   rates: {
     type: "status-based",
     status: {
