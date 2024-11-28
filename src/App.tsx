@@ -76,12 +76,12 @@ const formSchema = z
     age: z.coerce.number(),
     salary: z.coerce.number(),
     fourOhOneK: z.coerce.number().min(0).max(1),
-    hsa: z.coerce.number(),
+    hsaContribution: z.coerce.number(),
     rothIRAContribution: z.coerce.number(),
     expenses: z.array(expenseSchema),
   })
   .superRefine((data, ctx) => {
-    const rothLimit = rothIRALimit(data.salary, data.status, data.age);
+    const rothLimit = rothIRALimit(data);
     if (data.rothIRAContribution > rothLimit.maxRoth) {
       ctx.addIssue({
         message: `Your Roth IRA contribution cannot exceed ${formatMoney(
@@ -91,16 +91,24 @@ const formSchema = z
         code: "invalid_arguments",
         argumentsError: new z.ZodError([]),
       });
-      return;
+    }
+    const hsaMax = hsaLimit(data.status);
+    if (data.hsaContribution > hsaMax) {
+      ctx.addIssue({
+        message: `Your HSA contribution cannot exceed ${formatMoney(hsaMax)}`,
+        path: ["hsaContribution"],
+        code: "invalid_arguments",
+        argumentsError: new z.ZodError([]),
+      });
     }
   });
 
-function rothIRALimit(salary: number, status: TaxStatus, age: number) {
+function rothIRALimit(data: Form) {
   const standardDeduction = FED_TAX.standardDeduction;
-  const modifiedAGI = salary - standardDeduction;
+  const modifiedAGI = data.salary - standardDeduction;
   const { range, limit, limit50 } = FED_TAX.rothIRAMaxContribution;
-  const { low, high } = range[status];
-  const maxContributionForAge = age >= 50 ? limit50 : limit;
+  const { low, high } = range[data.status];
+  const maxContributionForAge = data.age >= 50 ? limit50 : limit;
   const maxRoth =
     modifiedAGI <= low
       ? maxContributionForAge
@@ -114,6 +122,10 @@ function rothIRALimit(salary: number, status: TaxStatus, age: number) {
   };
 }
 
+function hsaLimit(status: TaxStatus) {
+  return FED_TAX.hsaMaxContribution[status];
+}
+
 type Form = z.infer<typeof formSchema>;
 
 const DEFAULT_VALUES: Form = {
@@ -122,7 +134,7 @@ const DEFAULT_VALUES: Form = {
   salary: 100_000,
   age: 30,
   fourOhOneK: 0.05,
-  hsa: 1_000,
+  hsaContribution: 1_000,
   rothIRAContribution: 4_810,
   expenses: [
     { name: "Rent", amount: 1_000, type: "Housing" },
@@ -200,7 +212,7 @@ function Inner({
             <h2 className="text-xl">Income</h2>
             <FIELD form={form} formKey="salary" label="Salary" format />
             <FIELD form={form} formKey="fourOhOneK" label="401(k)" />
-            <FIELD form={form} formKey="hsa" label="HSA" format />
+            <FIELD form={form} formKey="hsaContribution" label="HSA" format />
             <FIELD
               form={form}
               formKey="rothIRAContribution"
@@ -543,7 +555,7 @@ function calculateNetTakeHomePay(data: Form) {
 
   // Assume all trad
   const fourOhOneKTraditional = data.salary * data.fourOhOneK;
-  const hsa = data.hsa;
+  const hsa = data.hsaContribution;
 
   const taxableIncome = preTaxIncome - deductions - fourOhOneKTraditional - hsa;
 
@@ -581,7 +593,7 @@ function calculateTaxesOBJECT(data: Form) {
 
   // Assume all trad
   const fourOhOneK = data.salary * data.fourOhOneK;
-  const hsa = data.hsa;
+  const hsa = data.hsaContribution;
 
   const taxableIncome = preTaxIncome - deductions - fourOhOneK - hsa;
 
