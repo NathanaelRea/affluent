@@ -19,7 +19,7 @@ import {
   TableHeader,
   TableRow,
 } from "./components/ui/table";
-import { useState } from "react";
+import { ReactNode, useState } from "react";
 import { Label } from "./components/ui/label";
 import { formatMoney, secantMethod } from "./lib/utils";
 import { Combobox } from "./components/combobox";
@@ -32,6 +32,7 @@ import {
   ChartTooltipContent,
 } from "./components/ui/chart";
 import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from "recharts";
+import { ChevronsUp } from "lucide-react";
 
 // FIXME value/label object
 const COL_CATEGORIES = [
@@ -92,7 +93,7 @@ const formSchema = z
         argumentsError: new z.ZodError([]),
       });
     }
-    const hsaMax = hsaLimit(data.status);
+    const hsaMax = hsaLimit(data);
     if (data.hsaContribution > hsaMax) {
       ctx.addIssue({
         message: `Your HSA contribution cannot exceed ${formatMoney(hsaMax)}`,
@@ -122,8 +123,8 @@ function rothIRALimit(data: Form) {
   };
 }
 
-function hsaLimit(status: TaxStatus) {
-  return FED_TAX.hsaMaxContribution[status];
+function hsaLimit(data: Form) {
+  return FED_TAX.hsaMaxContribution[data.status];
 }
 
 type Form = z.infer<typeof formSchema>;
@@ -212,11 +213,50 @@ function Inner({
             <h2 className="text-xl">Income</h2>
             <FIELD form={form} formKey="salary" label="Salary" format />
             <FIELD form={form} formKey="fourOhOneK" label="401(k)" />
-            <FIELD form={form} formKey="hsaContribution" label="HSA" format />
+            <FIELD
+              form={form}
+              formKey="hsaContribution"
+              label={
+                <div className="flex gap-2 items-center">
+                  HSA
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    title="Set to max"
+                    onClick={() =>
+                      form.setValue(
+                        "hsaContribution",
+                        hsaLimit(form.getValues())
+                      )
+                    }
+                  >
+                    <ChevronsUp />
+                  </Button>
+                </div>
+              }
+              format
+            />
             <FIELD
               form={form}
               formKey="rothIRAContribution"
-              label="Roth IRA"
+              label={
+                <div className="flex gap-2 items-center">
+                  Roth IRA
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    title="Set to max"
+                    onClick={() =>
+                      form.setValue(
+                        "rothIRAContribution",
+                        rothIRALimit(form.getValues()).maxRoth
+                      )
+                    }
+                  >
+                    <ChevronsUp />
+                  </Button>
+                </div>
+              }
               format
             />
             <h2 className="text-xl">Expenses</h2>
@@ -641,7 +681,7 @@ export default App;
 type FIELDProps<T extends FieldValues> = {
   form: UseFormReturn<T>;
   formKey: Path<T>;
-  label?: string;
+  label?: ReactNode;
   placeholder?: string;
   format?: boolean;
 };
