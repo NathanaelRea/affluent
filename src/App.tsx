@@ -19,7 +19,7 @@ import {
   TableHeader,
   TableRow,
 } from "./components/ui/table";
-import { ReactNode, useState } from "react";
+import { ReactNode, useEffect, useState } from "react";
 import { Label } from "./components/ui/label";
 import { formatMoney, formatPercent, secantMethod } from "./lib/utils";
 import { Combobox } from "./components/combobox";
@@ -33,6 +33,7 @@ import {
 } from "./components/ui/chart";
 import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from "recharts";
 import { ChevronsUp, Minus } from "lucide-react";
+import { toast } from "sonner";
 
 // FIXME value/label object
 const COL_CATEGORIES = [
@@ -345,11 +346,17 @@ function loadFromLocalStorage(): FormWrapped | undefined {
 
 function blackBox(formBase: Form, localNetTakeHomePay: number) {
   return (x: number) => {
-    const form = {
+    // This is kinda dumb, double iteration b/c phase out
+    const newForm = {
       ...formBase,
       salary: x,
     };
-    return calculateNetTakeHomePay(form) - localNetTakeHomePay;
+    const rothIRAContribution = rothIRALimit(formBase).maxRoth;
+    const newNewForm = {
+      ...newForm,
+      rothIRAContribution,
+    };
+    return calculateNetTakeHomePay(newNewForm) - localNetTakeHomePay;
   };
 }
 
@@ -371,12 +378,25 @@ function convertCOLAndFindSalary(data: Form, remoteCity: City): Form {
   );
 
   newData.salary = remoteSalaryNeeded;
+  newData.rothIRAContribution = rothIRALimit(newData).maxRoth;
   return newData;
 }
 
 function Results({ data }: { data: Form }) {
   const [remoteCity, setRemoteCity] = useState<City>(data.city);
   const convertedData = convertCOLAndFindSalary(data, remoteCity);
+
+  useEffect(() => {
+    if (data.rothIRAContribution != convertedData.rothIRAContribution) {
+      toast.warning(
+        `Roth IRA contribution has been adjusted from ${formatMoney(
+          data.rothIRAContribution
+        )} to ${formatMoney(
+          convertedData.rothIRAContribution
+        )}. This might make it hard to compare.`
+      );
+    }
+  }, [convertedData]);
 
   const localNetTakeHomePay = calculateNetTakeHomePay(data);
   const remoteNetTakeHomePay = calculateNetTakeHomePay(convertedData);
@@ -641,6 +661,9 @@ function calculateNetTakeHomePay(data: Form) {
   const fourOhOneKTraditional = data.salary * data.fourOhOneK;
   const hsa = data.hsaContribution;
 
+  // Assume max Roth
+  const roth = rothIRALimit(data);
+
   const taxableIncome = preTaxIncome - deductions - fourOhOneKTraditional - hsa;
 
   const fedTax = calculateTax(taxableIncome, fedRate, data.status);
@@ -659,6 +682,7 @@ function calculateNetTakeHomePay(data: Form) {
     medicare -
     fourOhOneKTraditional -
     hsa -
+    roth.maxRoth -
     expenses
   );
 }
