@@ -32,7 +32,7 @@ import {
   ChartTooltipContent,
 } from "./components/ui/chart";
 import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from "recharts";
-import { ChevronsUp } from "lucide-react";
+import { ChevronsUp, Minus } from "lucide-react";
 
 // FIXME value/label object
 const COL_CATEGORIES = [
@@ -178,6 +178,9 @@ function Inner({
     saveToLocalStorage(data);
   };
 
+  const maxHsa = hsaLimit(form.getValues());
+  const maxRoth = rothIRALimit(form.getValues());
+
   return (
     <div className="flex flex-col justify-center items-center">
       <main className="flex flex-col max-w-3xl w-full">
@@ -230,7 +233,11 @@ function Inner({
                       )
                     }
                   >
-                    <ChevronsUp />
+                    {maxHsa == form.getValues("hsaContribution") ? (
+                      <Minus />
+                    ) : (
+                      <ChevronsUp />
+                    )}
                   </Button>
                 </div>
               }
@@ -253,7 +260,12 @@ function Inner({
                       )
                     }
                   >
-                    <ChevronsUp />
+                    {maxRoth.maxRoth ==
+                    form.getValues("rothIRAContribution") ? (
+                      <Minus />
+                    ) : (
+                      <ChevronsUp />
+                    )}
                   </Button>
                 </div>
               }
