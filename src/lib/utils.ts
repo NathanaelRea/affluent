@@ -13,6 +13,10 @@ export function formatMoney(amount: number): string {
   });
 }
 
+export function formatPercent(amount: number): string {
+  return `${(amount * 100).toFixed(2)}%`;
+}
+
 export function secantMethod(
   f: (x: number) => number,
   x0: number,

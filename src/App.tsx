@@ -21,7 +21,7 @@ import {
 } from "./components/ui/table";
 import { ReactNode, useState } from "react";
 import { Label } from "./components/ui/label";
-import { formatMoney, secantMethod } from "./lib/utils";
+import { formatMoney, formatPercent, secantMethod } from "./lib/utils";
 import { Combobox } from "./components/combobox";
 import {
   ChartConfig,
@@ -104,9 +104,15 @@ const formSchema = z
     }
   });
 
-function rothIRALimit(data: Form) {
+function calculateModifiedAGI(data: Form) {
   const standardDeduction = FED_TAX.standardDeduction;
-  const modifiedAGI = data.salary - standardDeduction;
+  return (
+    data.salary - standardDeduction - data.hsaContribution - data.fourOhOneK
+  );
+}
+
+function rothIRALimit(data: Form) {
+  const modifiedAGI = calculateModifiedAGI(data);
   const { range, limit, limit50 } = FED_TAX.rothIRAMaxContribution;
   const { low, high } = range[data.status];
   const maxContributionForAge = data.age >= 50 ? limit50 : limit;
@@ -158,6 +164,16 @@ function App() {
 
   return <Inner defaultValues={defaultValues} resetDefaults={resetDefaults} />;
 }
+
+const moneyFormatter = {
+  formatValue: formatMoney,
+  formatInput: (value: string) => Number(value.replace(/[^0-9.]/g, "")),
+};
+
+const percentFormatter = {
+  formatValue: formatPercent,
+  formatInput: (value: string) => Number(value.replace(/[^0-9.]/g, "")) / 100,
+};
 
 function Inner({
   defaultValues,
@@ -214,8 +230,18 @@ function Inner({
             />
             <FIELD form={form} formKey="age" label="Age" />
             <h2 className="text-xl">Income</h2>
-            <FIELD form={form} formKey="salary" label="Salary" format />
-            <FIELD form={form} formKey="fourOhOneK" label="401(k)" />
+            <FIELD
+              form={form}
+              formKey="salary"
+              label="Salary"
+              format={moneyFormatter}
+            />
+            <FIELD
+              form={form}
+              formKey="fourOhOneK"
+              label="401(k)"
+              format={percentFormatter}
+            />
             <FIELD
               form={form}
               formKey="hsaContribution"
@@ -223,6 +249,7 @@ function Inner({
                 <div className="flex gap-2 items-center">
                   HSA
                   <Button
+                    type="button"
                     variant="ghost"
                     size="sm"
                     title="Set to max"
@@ -241,7 +268,7 @@ function Inner({
                   </Button>
                 </div>
               }
-              format
+              format={moneyFormatter}
             />
             <FIELD
               form={form}
@@ -250,6 +277,7 @@ function Inner({
                 <div className="flex gap-2 items-center">
                   Roth IRA
                   <Button
+                    type="button"
                     variant="ghost"
                     size="sm"
                     title="Set to max"
@@ -269,7 +297,7 @@ function Inner({
                   </Button>
                 </div>
               }
-              format
+              format={moneyFormatter}
             />
             <h2 className="text-xl">Expenses</h2>
             <ExpensesTable form={form} />
@@ -574,7 +602,11 @@ function ExpensesTable({ form }: { form: UseFormReturn<Form> }) {
               />
             </TableCell>
             <TableCell>
-              <FIELD form={form} formKey={`expenses.${index}.amount`} format />
+              <FIELD
+                form={form}
+                formKey={`expenses.${index}.amount`}
+                format={moneyFormatter}
+              />
             </TableCell>
           </TableRow>
         ))}
@@ -695,14 +727,17 @@ type FIELDProps<T extends FieldValues> = {
   formKey: Path<T>;
   label?: ReactNode;
   placeholder?: string;
-  format?: boolean;
+  format?: {
+    formatValue: (value: number) => string;
+    formatInput: (value: string) => number;
+  };
 };
 function FIELD<T extends FieldValues>({
   form,
   formKey,
   label,
   placeholder,
-  format = false,
+  format,
 }: FIELDProps<T>) {
   return (
     <FormField
@@ -715,9 +750,11 @@ function FIELD<T extends FieldValues>({
             <Input
               {...field}
               placeholder={placeholder}
-              value={format ? formatMoney(Number(field.value)) : field.value}
+              value={
+                format ? format.formatValue(Number(field.value)) : field.value
+              }
               onChange={(e) =>
-                format && field.onChange(e.target.value.replace(/[^0-9.]/g, ""))
+                format && field.onChange(format.formatInput(e.target.value))
               }
             />
           </FormControl>
