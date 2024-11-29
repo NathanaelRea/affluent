@@ -21,7 +21,7 @@ export function secantMethod(
   f: (x: number) => number,
   x0: number,
   x1: number,
-  tol: number = 1e-6
+  tol: number = 1e-6,
 ) {
   let x2 = x1;
   let f0 = f(x0);

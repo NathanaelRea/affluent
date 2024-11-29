@@ -47,10 +47,13 @@ const COL_CATEGORIES = [
 type Category = (typeof COL_CATEGORIES)[number];
 
 const costOfLivingSchema = z.object(
-  COL_CATEGORIES.reduce((acc, key) => {
-    acc[key] = z.coerce.number();
-    return acc;
-  }, {} as Record<Category, z.ZodNumber>)
+  COL_CATEGORIES.reduce(
+    (acc, key) => {
+      acc[key] = z.coerce.number();
+      return acc;
+    },
+    {} as Record<Category, z.ZodNumber>,
+  ),
 );
 type CostOfLiving = z.infer<typeof costOfLivingSchema>;
 
@@ -87,7 +90,7 @@ const formSchema = z
     if (data.rothIRAContribution > rothLimit.maxRoth) {
       ctx.addIssue({
         message: `Your Roth IRA contribution cannot exceed ${formatMoney(
-          rothLimit.maxRoth
+          rothLimit.maxRoth,
         )} since your modified AGI is ${formatMoney(rothLimit.modifiedAGI)}`,
         path: ["rothIRAContribution"],
         code: "invalid_arguments",
@@ -121,9 +124,9 @@ function rothIRALimit(data: Form) {
     modifiedAGI <= low
       ? maxContributionForAge
       : modifiedAGI >= high
-      ? 0
-      : maxContributionForAge -
-        (modifiedAGI - low) * (maxContributionForAge / (high - low));
+        ? 0
+        : maxContributionForAge -
+          (modifiedAGI - low) * (maxContributionForAge / (high - low));
   return {
     modifiedAGI,
     maxRoth,
@@ -257,7 +260,7 @@ function Inner({
                     onClick={() =>
                       form.setValue(
                         "hsaContribution",
-                        hsaLimit(form.getValues())
+                        hsaLimit(form.getValues()),
                       )
                     }
                   >
@@ -285,7 +288,7 @@ function Inner({
                     onClick={() =>
                       form.setValue(
                         "rothIRAContribution",
-                        rothIRALimit(form.getValues()).maxRoth
+                        rothIRALimit(form.getValues()).maxRoth,
                       )
                     }
                   >
@@ -374,7 +377,7 @@ function convertCOLAndFindSalary(data: Form, remoteCity: City): Form {
   const remoteSalaryNeeded = secantMethod(
     blackBox(newData, localNetTakeHomePay),
     0,
-    1_000_000
+    1_000_000,
   );
 
   newData.salary = remoteSalaryNeeded;
@@ -390,10 +393,10 @@ function Results({ data }: { data: Form }) {
     if (data.rothIRAContribution != convertedData.rothIRAContribution) {
       toast.warning(
         `Roth IRA contribution has been adjusted from ${formatMoney(
-          data.rothIRAContribution
+          data.rothIRAContribution,
         )} to ${formatMoney(
-          convertedData.rothIRAContribution
-        )}. This might make it hard to compare.`
+          convertedData.rothIRAContribution,
+        )}. This might make it hard to compare.`,
       );
     }
   }, [convertedData]);
@@ -585,7 +588,7 @@ function convertCostOfLiving(
   value: number,
   localCity: City,
   remoteCity: City,
-  category: Category
+  category: Category,
 ): number {
   const local = COST_OF_LIVING[localCity][category];
   const remote = COST_OF_LIVING[remoteCity][category];
@@ -637,7 +640,7 @@ function ExpensesTable({ form }: { form: UseFormReturn<Form> }) {
             {formatMoney(
               form
                 .watch("expenses")
-                .reduce((acc, { amount }) => acc + Number(amount), 0)
+                .reduce((acc, { amount }) => acc + Number(amount), 0),
             )}
           </TableCell>
         </TableRow>

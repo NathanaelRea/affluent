@@ -6,9 +6,11 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
-    "lint": "eslint .",
     "preview": "vite preview",
-    "format": "npx prettier --write ."
+    "format": "npx prettier --write ./src",
+    "format:check": "npx prettier --check ./src",
+    "lint:check": "eslint ./src",
+    "ts:check": "tsc --noEmit"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.9.1",
