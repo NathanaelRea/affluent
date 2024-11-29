@@ -18,7 +18,7 @@ export function formatPercent(amount: number): string {
 }
 
 export function secantMethod(
-  f: (x: number) => number,
+  f: (_x: number) => number,
   x0: number,
   x1: number,
   tol: number = 1e-6,

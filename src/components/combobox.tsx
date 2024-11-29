@@ -28,7 +28,7 @@ type ComboboxProps = {
   items: Item[];
   name: string;
   value: string;
-  setValue: (value: string) => void;
+  setValue: (_value: string) => void;
   disabled?: boolean;
 };
 

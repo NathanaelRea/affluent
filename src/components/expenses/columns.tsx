@@ -2,6 +2,7 @@ import { formatMoney } from "@/lib/utils";
 import { ColumnDef } from "@tanstack/react-table";
 import { z } from "zod";
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 const expensesSchema = z.object({
   name: z.string(),
   value: z.number(),

@@ -46,6 +46,7 @@ const COL_CATEGORIES = [
 ] as const;
 type Category = (typeof COL_CATEGORIES)[number];
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 const costOfLivingSchema = z.object(
   COL_CATEGORIES.reduce(
     (acc, key) => {
@@ -67,6 +68,7 @@ const expenseSchema = z.object({
 const TAX_STATUS = ["single", "married", "headOfHousehold"] as const;
 const taxStatusSchema = z.enum(TAX_STATUS);
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 const stateSchema = z.enum(["CA", "PA"]);
 const citySchema = z.enum([
   "San Francisco",
@@ -399,7 +401,7 @@ function Results({ data }: { data: Form }) {
         )}. This might make it hard to compare.`,
       );
     }
-  }, [convertedData]);
+  }, [data.rothIRAContribution, convertedData]);
 
   const localNetTakeHomePay = calculateNetTakeHomePay(data);
   const remoteNetTakeHomePay = calculateNetTakeHomePay(convertedData);
@@ -729,11 +731,11 @@ function calculateTaxesOBJECT(data: Form) {
 }
 
 function calculateTax(income: number, tax: Tax, status: TaxStatus): number {
+  let taxAmount = 0;
   switch (tax.type) {
     case "status-based":
       return calculateTax(income, tax.status[status], status);
     case "bracket":
-      let taxAmount = 0;
       for (const [bracket, rate] of Object.entries(tax.brackets)) {
         const bracketAmount = Math.min(income, Number(bracket));
         taxAmount += bracketAmount * rate;
@@ -755,8 +757,8 @@ type FIELDProps<T extends FieldValues> = {
   label?: ReactNode;
   placeholder?: string;
   format?: {
-    formatValue: (value: number) => string;
-    formatInput: (value: string) => number;
+    formatValue: (_: number) => string;
+    formatInput: (_: string) => number;
   };
 };
 function FIELD<T extends FieldValues>({
@@ -952,6 +954,7 @@ const STATE_TAX: StateTax = {
 };
 
 type CityTax = Record<City, Tax>;
+
 const CITY_TAX: CityTax = {
   "Los Angeles": { type: "percentage", rate: 0 },
   "San Francisco": { type: "percentage", rate: 0 },
