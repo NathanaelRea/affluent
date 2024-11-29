@@ -206,7 +206,7 @@ function Inner({
   return (
     <div className="flex flex-col justify-center items-center">
       <main className="flex flex-col max-w-3xl w-full">
-        <h1 className="text-2xl">Finance thing</h1>
+        <h1 className="text-2xl">Affluent</h1>
         <div>
           <Button variant="ghost" onClick={resetDefaults}>
             Clear

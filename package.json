@@ -1,5 +1,5 @@
 {
-  "name": "finance-retirement",
+  "name": "affluent",
   "private": true,
   "version": "0.0.0",
   "type": "module",
@@ -38,7 +38,7 @@
     "clsx": "^2.1.1",
     "cmdk": "^1.0.4",
     "date-fns": "^4.1.0",
-    "finance-retirement": "file:",
+    "affluent": "file:",
     "lucide-react": "^0.462.0",
     "next-themes": "^0.4.3",
     "react": "^18.3.1",
