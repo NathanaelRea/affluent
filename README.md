@@ -1,4 +1,4 @@
-# Finance thing
+# Affluent
 
 Testing some finance stuff. Want to work on:
 
