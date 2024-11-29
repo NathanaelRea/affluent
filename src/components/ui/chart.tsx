@@ -1,10 +1,6 @@
 import * as React from "react";
 import * as RechartsPrimitive from "recharts";
-import {
-  NameType,
-  Payload,
-  ValueType,
-} from "recharts/types/component/DefaultTooltipContent";
+import { ValueType } from "recharts/types/component/DefaultTooltipContent";
 
 import { cn } from "@/lib/utils";
 
@@ -12,7 +8,7 @@ import { cn } from "@/lib/utils";
 const THEMES = { light: "", dark: ".dark" } as const;
 
 export type ChartConfig = {
-  [k in string]: {
+  [_k in string]: {
     label?: React.ReactNode;
     icon?: React.ComponentType;
   } & (
@@ -72,7 +68,7 @@ ChartContainer.displayName = "Chart";
 
 const ChartStyle = ({ id, config }: { id: string; config: ChartConfig }) => {
   const colorConfig = Object.entries(config).filter(
-    ([_, config]) => config.theme || config.color,
+    ([, config]) => config.theme || config.color,
   );
 
   if (!colorConfig.length) {
@@ -114,6 +110,7 @@ const ChartTooltipContent = React.forwardRef<
       indicator?: "line" | "dot" | "dashed";
       nameKey?: string;
       labelKey?: string;
+      valueFormatter?: (_value: ValueType) => string;
     }
 >(
   (
@@ -131,6 +128,7 @@ const ChartTooltipContent = React.forwardRef<
       color,
       nameKey,
       labelKey,
+      valueFormatter,
     },
     ref,
   ) => {
@@ -231,7 +229,7 @@ const ChartTooltipContent = React.forwardRef<
                     )}
                     <div
                       className={cn(
-                        "flex flex-1 justify-between leading-none",
+                        "flex flex-1 justify-between leading-none gap-2",
                         nestLabel ? "items-end" : "items-center",
                       )}
                     >
@@ -243,7 +241,9 @@ const ChartTooltipContent = React.forwardRef<
                       </div>
                       {item.value && (
                         <span className="font-mono font-medium tabular-nums text-foreground">
-                          {item.value.toLocaleString()}
+                          {valueFormatter
+                            ? valueFormatter(item.value)
+                            : item.value.toLocaleString()}
                         </span>
                       )}
                     </div>
