@@ -61,6 +61,7 @@ const formSchema = z
     fourOhOneK: z.coerce.number().min(0).max(1),
     hsaContribution: z.coerce.number(),
     rothIRAContribution: z.coerce.number(),
+    afterTaxInvestments: z.coerce.number(),
     expenses: z.array(expenseSchema),
   })
   .superRefine((data, ctx) => {
@@ -125,6 +126,7 @@ const DEFAULT_VALUES: MyForm = {
   fourOhOneK: 0.05,
   hsaContribution: 1_000,
   rothIRAContribution: 4_810,
+  afterTaxInvestments: 0,
   expenses: [
     { name: "Rent", amount: 1_000, categoryId: "1" },
     { name: "Renter's Insurance", amount: 10, categoryId: "1" },
@@ -281,6 +283,12 @@ function Inner({
               }
               format={moneyFormatter}
             />
+            <FIELD
+              form={form}
+              formKey="afterTaxInvestments"
+              label="After tax investments"
+              format={moneyFormatter}
+            />
             <h2 className="text-xl">Expenses</h2>
             <ExpensesTable form={form} />
             <Button type="submit" onClick={form.handleSubmit(onSubmit)}>
@@ -325,51 +333,6 @@ function loadFromLocalStorage(): MyFormWrapped | undefined {
   }
 }
 
-function blackBox(formBase: MyForm, localNetTakeHomePay: number) {
-  return (x: number) => {
-    // This is kinda dumb, double iteration b/c phase out
-    const newMyForm = {
-      ...formBase,
-      salary: x,
-    };
-    const rothIRAContribution = rothIRALimit(formBase).maxRoth;
-    const newNewMyForm = {
-      ...newMyForm,
-      rothIRAContribution,
-    };
-    return (
-      calculateNetTakeHomePay(newNewMyForm).netTakeHome - localNetTakeHomePay
-    );
-  };
-}
-
-function convertCOLAndFindSalary(data: MyForm, remoteCityId: string): MyForm {
-  const newData = {
-    ...data,
-    city: remoteCityId,
-    expenses: data.expenses.map((e) => ({
-      ...e,
-      amount: convertCostOfLiving(
-        e.amount,
-        data.cityId,
-        remoteCityId,
-        e.categoryId,
-      ),
-    })),
-  };
-
-  const localNetTakeHomePay = calculateNetTakeHomePay(data).netTakeHome;
-  const remoteSalaryNeeded = secantMethod(
-    blackBox(newData, localNetTakeHomePay),
-    0,
-    1_000_000,
-  );
-
-  newData.salary = remoteSalaryNeeded;
-  newData.rothIRAContribution = rothIRALimit(newData).maxRoth;
-  return newData;
-}
-
 function Results({ data }: { data: MyForm }) {
   const [remoteCityId, setRemoteCityId] = useState<string>(data.cityId);
   const convertedData = convertCOLAndFindSalary(data, remoteCityId);
@@ -381,7 +344,7 @@ function Results({ data }: { data: MyForm }) {
           data.rothIRAContribution,
         )} to ${formatMoney(
           convertedData.rothIRAContribution,
-        )}. This might make it hard to compare.`,
+        )}. The excess has been put in after tax investments.`,
       );
     }
   }, [data.rothIRAContribution, convertedData]);
@@ -418,6 +381,52 @@ function Results({ data }: { data: MyForm }) {
       <Input value={formatMoney(remoteNetTakeHomePay / 12)} disabled />
     </div>
   );
+}
+
+function convertCOLAndFindSalary(data: MyForm, remoteCityId: string): MyForm {
+  const localAfterTax = data.rothIRAContribution + data.afterTaxInvestments;
+  const dataNoAfterTax: MyForm = {
+    ...data,
+    rothIRAContribution: 0,
+    afterTaxInvestments: 0,
+  };
+  const newData: MyForm = {
+    ...dataNoAfterTax,
+    cityId: remoteCityId,
+    expenses: data.expenses.map((e) => ({
+      ...e,
+      amount: convertCostOfLiving(
+        e.amount,
+        data.cityId,
+        remoteCityId,
+        e.categoryId,
+      ),
+    })),
+  };
+
+  const localNetTakeHomePay =
+    calculateNetTakeHomePay(dataNoAfterTax).netTakeHome;
+  const remoteSalaryNeeded = secantMethod(
+    blackBox(newData, localNetTakeHomePay),
+    0,
+    1_000_000,
+  );
+
+  newData.salary = remoteSalaryNeeded;
+  const newRothLimit = rothIRALimit(newData).maxRoth;
+  newData.rothIRAContribution = Math.min(localAfterTax, newRothLimit);
+  newData.afterTaxInvestments = localAfterTax - newData.rothIRAContribution;
+  return newData;
+}
+
+function blackBox(formBase: MyForm, localNetTakeHomePay: number) {
+  return (x: number) => {
+    const newForm = {
+      ...formBase,
+      salary: x,
+    };
+    return calculateNetTakeHomePay(newForm).netTakeHome - localNetTakeHomePay;
+  };
 }
 
 function ExpensesChart({
@@ -667,8 +676,9 @@ function calculateNetTakeHomePay(data: MyForm) {
   const socialSecurity = preTaxIncome * FED_TAX.socialSecurity;
   const medicare = preTaxIncome * FED_TAX.medicare;
 
-  // Assume max Roth
-  const roth = rothIRALimit(data);
+  // Assume within limit (already validated)
+  const roth = data.rothIRAContribution;
+  const afterTaxInvestments = data.afterTaxInvestments;
 
   // Assume all trad
   const fourOhOneK = data.salary * data.fourOhOneK;
@@ -692,7 +702,8 @@ function calculateNetTakeHomePay(data: MyForm) {
     medicare -
     fourOhOneK -
     hsa -
-    roth.maxRoth -
+    roth -
+    afterTaxInvestments -
     expenses;
 
   return {
