@@ -45,6 +45,8 @@ import {
   TaxStatus,
   taxStatusSchema,
 } from "./data";
+import { Pie, PieChart } from "recharts";
+import { Card, CardContent, CardHeader, CardTitle } from "./components/ui/card";
 
 const expenseSchema = z.object({
   name: z.string(),
@@ -379,6 +381,8 @@ function Results({ data }: { data: MyForm }) {
       <Label>Remote Net Take Home Pay (yr, mo)</Label>
       <Input value={formatMoney(remoteNetTakeHomePay)} disabled />
       <Input value={formatMoney(remoteNetTakeHomePay / 12)} disabled />
+      <h2 className="text-xl">Overview 2</h2>
+      <MyPieChart localData={data} remoteData={convertedData} />
     </div>
   );
 }
@@ -436,6 +440,8 @@ function ExpensesChart({
   localData: MyForm;
   remoteData: MyForm;
 }) {
+  const localCity = cityMap.get(localData.cityId);
+  const remoteCity = cityMap.get(remoteData.cityId);
   const chartData = localData.expenses.map((expense, index) => ({
     name: expense.name,
     local: expense.amount,
@@ -444,11 +450,11 @@ function ExpensesChart({
 
   const chartConfig = {
     local: {
-      label: localData.cityId,
+      label: localCity?.name,
       color: "#2563eb",
     },
     remote: {
-      label: remoteData.cityId,
+      label: remoteCity?.name,
       color: "#60a5fa",
     },
   } satisfies ChartConfig;
@@ -491,6 +497,8 @@ function OverviewChart({
   localData: MyForm;
   remoteData: MyForm;
 }) {
+  const localCity = cityMap.get(localData.cityId);
+  const remoteCity = cityMap.get(remoteData.cityId);
   const localTaxes = calculateNetTakeHomePay(localData);
   const remoteTaxes = calculateNetTakeHomePay(remoteData);
 
@@ -539,11 +547,11 @@ function OverviewChart({
 
   const chartConfig = {
     local: {
-      label: localData.cityId,
+      label: localCity?.name,
       color: "#2563eb",
     },
     remote: {
-      label: remoteData.cityId,
+      label: remoteCity?.name,
       color: "#60a5fa",
     },
   } satisfies ChartConfig;
@@ -577,6 +585,126 @@ function OverviewChart({
       </BarChart>
     </ChartContainer>
   );
+}
+
+function MyPieChart({
+  localData,
+  remoteData,
+}: {
+  localData: MyForm;
+  remoteData: MyForm;
+}) {
+  const localCity = cityMap.get(localData.cityId);
+  const remoteCity = cityMap.get(remoteData.cityId);
+
+  const localDataPie = createPieData(localData);
+  const remoteDataPie = createPieData(remoteData);
+
+  const chartConfig = {
+    tax: {
+      label: "Tax",
+    },
+    socialSecurity: {
+      label: "Social Security / Medicare",
+    },
+    expenses: {
+      label: "Expenses",
+    },
+    investments: {
+      label: "Investments",
+    },
+    netTakeHome: {
+      label: "Net Take Home",
+    },
+  } satisfies ChartConfig;
+
+  return (
+    <div className="flex">
+      <Card>
+        <CardHeader>
+          <CardTitle>{localCity?.name}</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <ChartContainer
+            config={chartConfig}
+            className="aspect-square h-[400px]"
+          >
+            <PieChart>
+              <ChartTooltip
+                cursor={false}
+                content={
+                  <ChartTooltipContent
+                    hideLabel
+                    valueFormatter={(v) => formatMoney(Number(v))}
+                  />
+                }
+              />
+              <Pie data={localDataPie} dataKey="value" nameKey="name" />
+              <ChartLegend content={<ChartLegendContent />} />
+            </PieChart>
+          </ChartContainer>
+        </CardContent>
+      </Card>
+      <Card>
+        <CardHeader>
+          <CardTitle>{remoteCity?.name}</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <ChartContainer
+            config={chartConfig}
+            className="aspect-square h-[400px]"
+          >
+            <PieChart>
+              <ChartTooltip
+                cursor={false}
+                content={
+                  <ChartTooltipContent
+                    hideLabel
+                    valueFormatter={(v) => formatMoney(Number(v))}
+                  />
+                }
+              />
+              <ChartLegend content={<ChartLegendContent />} />
+              <Pie data={remoteDataPie} dataKey="value" nameKey="name"></Pie>
+            </PieChart>
+          </ChartContainer>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
+function createPieData(data: MyForm) {
+  const parsedData = calculateNetTakeHomePay(data);
+  const taxes = parsedData.fedTax + parsedData.stateTax + parsedData.cityTax;
+  const socialSecurity = parsedData.socialSecurity + parsedData.medicare;
+  const expenses = parsedData.expenses;
+  const investments =
+    parsedData.rothIRAContribution + parsedData.afterTaxInvestments;
+  const netTakeHome = parsedData.netTakeHome;
+  return [
+    {
+      name: "tax",
+      value: taxes / 12,
+      fill: "#2563eb",
+    },
+    {
+      name: "socialSecurity",
+      value: socialSecurity / 12,
+      fill: "#60a5fa",
+    },
+    { name: "expenses", value: expenses / 12, fill: "#FF8042" },
+    {
+      name: "investments",
+      value: investments / 12,
+      fill: "#00C49F",
+    },
+    {
+      name: "netTakeHome",
+      value: netTakeHome / 12,
+      fill: "#FFBB28",
+    },
+  ];
 }
 
 function convertCostOfLiving(
@@ -717,6 +845,8 @@ function calculateNetTakeHomePay(data: MyForm) {
     fourOhOneK,
     hsa,
     expenses,
+    rothIRAContribution: roth,
+    afterTaxInvestments,
   };
 }
 
