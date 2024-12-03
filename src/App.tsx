@@ -337,7 +337,9 @@ function blackBox(formBase: MyForm, localNetTakeHomePay: number) {
       ...newMyForm,
       rothIRAContribution,
     };
-    return calculateNetTakeHomePay(newNewMyForm) - localNetTakeHomePay;
+    return (
+      calculateNetTakeHomePay(newNewMyForm).netTakeHome - localNetTakeHomePay
+    );
   };
 }
 
@@ -356,7 +358,7 @@ function convertCOLAndFindSalary(data: MyForm, remoteCityId: string): MyForm {
     })),
   };
 
-  const localNetTakeHomePay = calculateNetTakeHomePay(data);
+  const localNetTakeHomePay = calculateNetTakeHomePay(data).netTakeHome;
   const remoteSalaryNeeded = secantMethod(
     blackBox(newData, localNetTakeHomePay),
     0,
@@ -384,8 +386,9 @@ function Results({ data }: { data: MyForm }) {
     }
   }, [data.rothIRAContribution, convertedData]);
 
-  const localNetTakeHomePay = calculateNetTakeHomePay(data);
-  const remoteNetTakeHomePay = calculateNetTakeHomePay(convertedData);
+  const localNetTakeHomePay = calculateNetTakeHomePay(data).netTakeHome;
+  const remoteNetTakeHomePay =
+    calculateNetTakeHomePay(convertedData).netTakeHome;
 
   return (
     <div>
@@ -479,8 +482,8 @@ function OverviewChart({
   localData: MyForm;
   remoteData: MyForm;
 }) {
-  const localTaxes = calculateTaxesOBJECT(localData);
-  const remoteTaxes = calculateTaxesOBJECT(remoteData);
+  const localTaxes = calculateNetTakeHomePay(localData);
+  const remoteTaxes = calculateNetTakeHomePay(remoteData);
 
   const chartData = [
     {
@@ -664,47 +667,8 @@ function calculateNetTakeHomePay(data: MyForm) {
   const socialSecurity = preTaxIncome * FED_TAX.socialSecurity;
   const medicare = preTaxIncome * FED_TAX.medicare;
 
-  // Assume all trad
-  const fourOhOneKTraditional = data.salary * data.fourOhOneK;
-  const hsa = data.hsaContribution;
-
   // Assume max Roth
   const roth = rothIRALimit(data);
-
-  const taxableIncome = preTaxIncome - deductions - fourOhOneKTraditional - hsa;
-
-  const fedTax = calculateTax(taxableIncome, fedRate, data.status);
-  const stateTax = calculateTax(taxableIncome, stateRate, data.status);
-  const cityTax = calculateTax(taxableIncome, cityRate, data.status);
-
-  const expenses =
-    12 * data.expenses.reduce((acc, { amount }) => acc + amount, 0);
-
-  return (
-    preTaxIncome -
-    fedTax -
-    stateTax -
-    cityTax -
-    socialSecurity -
-    medicare -
-    fourOhOneKTraditional -
-    hsa -
-    roth.maxRoth -
-    expenses
-  );
-}
-
-function calculateTaxesOBJECT(data: MyForm) {
-  // Use separate function, feels wasteful to create objects inside secant method
-  const fedRate = FED_TAX.rates;
-  const { city, state } = getCityAndState(data.cityId);
-  const cityRate = city.tax;
-  const stateRate = state.tax;
-
-  const preTaxIncome = data.salary;
-  const deductions = FED_TAX.standardDeduction;
-  const socialSecurity = preTaxIncome * FED_TAX.socialSecurity;
-  const medicare = preTaxIncome * FED_TAX.medicare;
 
   // Assume all trad
   const fourOhOneK = data.salary * data.fourOhOneK;
@@ -719,7 +683,20 @@ function calculateTaxesOBJECT(data: MyForm) {
   const expenses =
     12 * data.expenses.reduce((acc, { amount }) => acc + amount, 0);
 
+  const netTakeHome =
+    preTaxIncome -
+    fedTax -
+    stateTax -
+    cityTax -
+    socialSecurity -
+    medicare -
+    fourOhOneK -
+    hsa -
+    roth.maxRoth -
+    expenses;
+
   return {
+    netTakeHome,
     preTaxIncome,
     fedTax,
     stateTax,
@@ -733,17 +710,16 @@ function calculateTaxesOBJECT(data: MyForm) {
 }
 
 function calculateTax(income: number, tax: Tax, status: TaxStatus): number {
-  let taxAmount = 0;
   switch (tax.type) {
     case "status-based":
       return calculateTax(income, tax.status[status], status);
     case "bracket":
-      for (const [bracket, rate] of Object.entries(tax.brackets)) {
+      return Object.entries(tax.brackets).reduce((acc, [bracket, rate]) => {
         const bracketAmount = Math.min(income, Number(bracket));
-        taxAmount += bracketAmount * rate;
+        acc += bracketAmount * rate;
         income -= bracketAmount;
-      }
-      return taxAmount;
+        return acc;
+      }, 0);
     case "percentage":
       return income * tax.rate;
     case "flat":
