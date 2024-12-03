@@ -34,57 +34,34 @@ import {
 import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from "recharts";
 import { ChevronsUp, Minus } from "lucide-react";
 import { toast } from "sonner";
-
-// FIXME value/label object
-const COL_CATEGORIES = [
-  "Housing",
-  "Transportation",
-  "Grocery",
-  "Utilities",
-  "Healthcare",
-  "Miscellaneous",
-] as const;
-type Category = (typeof COL_CATEGORIES)[number];
-
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-const costOfLivingSchema = z.object(
-  COL_CATEGORIES.reduce(
-    (acc, key) => {
-      acc[key] = z.coerce.number();
-      return acc;
-    },
-    {} as Record<Category, z.ZodNumber>,
-  ),
-);
-type CostOfLiving = z.infer<typeof costOfLivingSchema>;
+import {
+  categories,
+  cities,
+  cityMap,
+  FED_TAX,
+  stateMap,
+  Tax,
+  TAX_STATUS,
+  TaxStatus,
+  taxStatusSchema,
+} from "./data";
 
 const expenseSchema = z.object({
   name: z.string(),
   amount: z.coerce.number(),
-  type: z.enum(COL_CATEGORIES),
+  categoryId: z.string(),
 });
 
-// FIXME value/label object
-const TAX_STATUS = ["single", "married", "headOfHousehold"] as const;
-const taxStatusSchema = z.enum(TAX_STATUS);
-
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-const stateSchema = z.enum(["CA", "PA"]);
-const citySchema = z.enum([
-  "San Francisco",
-  "Los Angeles",
-  "Philadelphia",
-  "Pittsburgh",
-]);
 const formSchema = z
   .object({
-    city: citySchema,
+    cityId: z.string(),
     status: taxStatusSchema,
     age: z.coerce.number(),
     salary: z.coerce.number(),
     fourOhOneK: z.coerce.number().min(0).max(1),
     hsaContribution: z.coerce.number(),
     rothIRAContribution: z.coerce.number(),
+    afterTaxInvestments: z.coerce.number(),
     expenses: z.array(expenseSchema),
   })
   .superRefine((data, ctx) => {
@@ -110,14 +87,14 @@ const formSchema = z
     }
   });
 
-function calculateModifiedAGI(data: Form) {
+function calculateModifiedAGI(data: MyForm) {
   const standardDeduction = FED_TAX.standardDeduction;
   return (
     data.salary - standardDeduction - data.hsaContribution - data.fourOhOneK
   );
 }
 
-function rothIRALimit(data: Form) {
+function rothIRALimit(data: MyForm) {
   const modifiedAGI = calculateModifiedAGI(data);
   const { range, limit, limit50 } = FED_TAX.rothIRAMaxContribution;
   const { low, high } = range[data.status];
@@ -135,28 +112,29 @@ function rothIRALimit(data: Form) {
   };
 }
 
-function hsaLimit(data: Form) {
+function hsaLimit(data: MyForm) {
   return FED_TAX.hsaMaxContribution[data.status];
 }
 
-type Form = z.infer<typeof formSchema>;
+type MyForm = z.infer<typeof formSchema>;
 
-const DEFAULT_VALUES: Form = {
-  city: "Philadelphia",
+const DEFAULT_VALUES: MyForm = {
+  cityId: "3",
   status: "single",
   salary: 100_000,
   age: 30,
   fourOhOneK: 0.05,
   hsaContribution: 1_000,
   rothIRAContribution: 4_810,
+  afterTaxInvestments: 0,
   expenses: [
-    { name: "Rent", amount: 1_000, type: "Housing" },
-    { name: "Renter's Insurance", amount: 10, type: "Housing" },
-    { name: "Food", amount: 300, type: "Grocery" },
-    { name: "Utilities", amount: 100, type: "Utilities" },
-    { name: "Car", amount: 500, type: "Transportation" },
-    { name: "Entertainment", amount: 100, type: "Miscellaneous" },
-    { name: "Misc", amount: 100, type: "Miscellaneous" },
+    { name: "Rent", amount: 1_000, categoryId: "1" },
+    { name: "Renter's Insurance", amount: 10, categoryId: "1" },
+    { name: "Food", amount: 300, categoryId: "3" },
+    { name: "Utilities", amount: 100, categoryId: "4" },
+    { name: "Car", amount: 500, categoryId: "2" },
+    { name: "Entertainment", amount: 100, categoryId: "6" },
+    { name: "Misc", amount: 100, categoryId: "6" },
   ],
 };
 
@@ -185,17 +163,17 @@ function Inner({
   defaultValues,
   resetDefaults,
 }: {
-  defaultValues: Form | undefined;
+  defaultValues: MyForm | undefined;
   resetDefaults: () => void;
 }) {
-  const [data, setData] = useState<Form | undefined>();
+  const [data, setData] = useState<MyForm | undefined>();
 
-  const form = useForm<Form>({
+  const form = useForm<MyForm>({
     resolver: zodResolver(formSchema),
     defaultValues,
   });
 
-  const onSubmit = (data: Form) => {
+  const onSubmit = (data: MyForm) => {
     setData(data);
     saveToLocalStorage(data);
   };
@@ -227,11 +205,11 @@ function Inner({
             <Combobox
               disabled
               name="city"
-              items={CITIES.map((c) => ({
-                label: `${c.name}, ${c.stateAbbr}`,
-                value: c.name,
+              items={cities.map((c) => ({
+                label: `${c.name}, ${c.state.abbreviation}`,
+                value: c.id,
               }))}
-              value={"Philadelphia"}
+              value={"3"}
               setValue={() => {}}
             />
             <FIELD form={form} formKey="age" label="Age" />
@@ -305,6 +283,12 @@ function Inner({
               }
               format={moneyFormatter}
             />
+            <FIELD
+              form={form}
+              formKey="afterTaxInvestments"
+              label="After tax investments"
+              format={moneyFormatter}
+            />
             <h2 className="text-xl">Expenses</h2>
             <ExpensesTable form={form} />
             <Button type="submit" onClick={form.handleSubmit(onSubmit)}>
@@ -328,9 +312,9 @@ function createLocalStorageWrapperSchema<T extends z.ZodTypeAny>(schema: T) {
 }
 
 const formWrapped = createLocalStorageWrapperSchema(formSchema);
-type FormWrapped = z.infer<typeof formWrapped>;
+type MyFormWrapped = z.infer<typeof formWrapped>;
 
-function saveToLocalStorage(data: Form) {
+function saveToLocalStorage(data: MyForm) {
   try {
     const dataWrapped = formWrapped.parse({ version: 1, data });
     localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(dataWrapped));
@@ -339,7 +323,7 @@ function saveToLocalStorage(data: Form) {
   }
 }
 
-function loadFromLocalStorage(): FormWrapped | undefined {
+function loadFromLocalStorage(): MyFormWrapped | undefined {
   try {
     const rawData = localStorage.getItem(LOCAL_STORAGE_KEY);
     if (!rawData) return undefined;
@@ -349,47 +333,9 @@ function loadFromLocalStorage(): FormWrapped | undefined {
   }
 }
 
-function blackBox(formBase: Form, localNetTakeHomePay: number) {
-  return (x: number) => {
-    // This is kinda dumb, double iteration b/c phase out
-    const newForm = {
-      ...formBase,
-      salary: x,
-    };
-    const rothIRAContribution = rothIRALimit(formBase).maxRoth;
-    const newNewForm = {
-      ...newForm,
-      rothIRAContribution,
-    };
-    return calculateNetTakeHomePay(newNewForm) - localNetTakeHomePay;
-  };
-}
-
-function convertCOLAndFindSalary(data: Form, remoteCity: City): Form {
-  const newData = {
-    ...data,
-    city: remoteCity,
-    expenses: data.expenses.map((e) => ({
-      ...e,
-      amount: convertCostOfLiving(e.amount, data.city, remoteCity, e.type),
-    })),
-  };
-
-  const localNetTakeHomePay = calculateNetTakeHomePay(data);
-  const remoteSalaryNeeded = secantMethod(
-    blackBox(newData, localNetTakeHomePay),
-    0,
-    1_000_000,
-  );
-
-  newData.salary = remoteSalaryNeeded;
-  newData.rothIRAContribution = rothIRALimit(newData).maxRoth;
-  return newData;
-}
-
-function Results({ data }: { data: Form }) {
-  const [remoteCity, setRemoteCity] = useState<City>(data.city);
-  const convertedData = convertCOLAndFindSalary(data, remoteCity);
+function Results({ data }: { data: MyForm }) {
+  const [remoteCityId, setRemoteCityId] = useState<string>(data.cityId);
+  const convertedData = convertCOLAndFindSalary(data, remoteCityId);
 
   useEffect(() => {
     if (data.rothIRAContribution != convertedData.rothIRAContribution) {
@@ -398,13 +344,14 @@ function Results({ data }: { data: Form }) {
           data.rothIRAContribution,
         )} to ${formatMoney(
           convertedData.rothIRAContribution,
-        )}. This might make it hard to compare.`,
+        )}. The excess has been put in after tax investments.`,
       );
     }
   }, [data.rothIRAContribution, convertedData]);
 
-  const localNetTakeHomePay = calculateNetTakeHomePay(data);
-  const remoteNetTakeHomePay = calculateNetTakeHomePay(convertedData);
+  const localNetTakeHomePay = calculateNetTakeHomePay(data).netTakeHome;
+  const remoteNetTakeHomePay =
+    calculateNetTakeHomePay(convertedData).netTakeHome;
 
   return (
     <div>
@@ -412,12 +359,12 @@ function Results({ data }: { data: Form }) {
       <div>
         <Combobox
           name="city"
-          items={CITIES.map((c) => ({
-            label: `${c.name}, ${c.stateAbbr}`,
-            value: c.name,
+          items={cities.map((c) => ({
+            label: `${c.name}, ${c.state.abbreviation}`,
+            value: c.id,
           }))}
-          value={remoteCity}
-          setValue={(c) => setRemoteCity(c as City)}
+          value={remoteCityId}
+          setValue={(c) => setRemoteCityId(c)}
         />
       </div>
       <Label>Required Income</Label>
@@ -436,12 +383,58 @@ function Results({ data }: { data: Form }) {
   );
 }
 
+function convertCOLAndFindSalary(data: MyForm, remoteCityId: string): MyForm {
+  const localAfterTax = data.rothIRAContribution + data.afterTaxInvestments;
+  const dataNoAfterTax: MyForm = {
+    ...data,
+    rothIRAContribution: 0,
+    afterTaxInvestments: 0,
+  };
+  const newData: MyForm = {
+    ...dataNoAfterTax,
+    cityId: remoteCityId,
+    expenses: data.expenses.map((e) => ({
+      ...e,
+      amount: convertCostOfLiving(
+        e.amount,
+        data.cityId,
+        remoteCityId,
+        e.categoryId,
+      ),
+    })),
+  };
+
+  const localNetTakeHomePay =
+    calculateNetTakeHomePay(dataNoAfterTax).netTakeHome;
+  const remoteSalaryNeeded = secantMethod(
+    blackBox(newData, localNetTakeHomePay),
+    0,
+    1_000_000,
+  );
+
+  newData.salary = remoteSalaryNeeded;
+  const newRothLimit = rothIRALimit(newData).maxRoth;
+  newData.rothIRAContribution = Math.min(localAfterTax, newRothLimit);
+  newData.afterTaxInvestments = localAfterTax - newData.rothIRAContribution;
+  return newData;
+}
+
+function blackBox(formBase: MyForm, localNetTakeHomePay: number) {
+  return (x: number) => {
+    const newForm = {
+      ...formBase,
+      salary: x,
+    };
+    return calculateNetTakeHomePay(newForm).netTakeHome - localNetTakeHomePay;
+  };
+}
+
 function ExpensesChart({
   localData,
   remoteData,
 }: {
-  localData: Form;
-  remoteData: Form;
+  localData: MyForm;
+  remoteData: MyForm;
 }) {
   const chartData = localData.expenses.map((expense, index) => ({
     name: expense.name,
@@ -451,11 +444,11 @@ function ExpensesChart({
 
   const chartConfig = {
     local: {
-      label: localData.city,
+      label: localData.cityId,
       color: "#2563eb",
     },
     remote: {
-      label: remoteData.city,
+      label: remoteData.cityId,
       color: "#60a5fa",
     },
   } satisfies ChartConfig;
@@ -495,11 +488,11 @@ function OverviewChart({
   localData,
   remoteData,
 }: {
-  localData: Form;
-  remoteData: Form;
+  localData: MyForm;
+  remoteData: MyForm;
 }) {
-  const localTaxes = calculateTaxesOBJECT(localData);
-  const remoteTaxes = calculateTaxesOBJECT(remoteData);
+  const localTaxes = calculateNetTakeHomePay(localData);
+  const remoteTaxes = calculateNetTakeHomePay(remoteData);
 
   const chartData = [
     {
@@ -546,11 +539,11 @@ function OverviewChart({
 
   const chartConfig = {
     local: {
-      label: localData.city,
+      label: localData.cityId,
       color: "#2563eb",
     },
     remote: {
-      label: remoteData.city,
+      label: remoteData.cityId,
       color: "#60a5fa",
     },
   } satisfies ChartConfig;
@@ -588,16 +581,20 @@ function OverviewChart({
 
 function convertCostOfLiving(
   value: number,
-  localCity: City,
-  remoteCity: City,
-  category: Category,
+  localCityId: string,
+  remoteCityId: string,
+  categoryId: string,
 ): number {
-  const local = COST_OF_LIVING[localCity][category];
-  const remote = COST_OF_LIVING[remoteCity][category];
-  return value * (remote / local);
+  const localCOL = cityMap.get(localCityId)?.costOfLiving[categoryId];
+  const remoteCOL = cityMap.get(remoteCityId)?.costOfLiving[categoryId];
+  if (!localCOL || !remoteCOL) {
+    throw new Error("Invalid city id");
+    return value;
+  }
+  return value * (remoteCOL / localCOL);
 }
 
-function ExpensesTable({ form }: { form: UseFormReturn<Form> }) {
+function ExpensesTable({ form }: { form: UseFormReturn<MyForm> }) {
   return (
     <Table>
       <TableHeader>
@@ -616,13 +613,15 @@ function ExpensesTable({ form }: { form: UseFormReturn<Form> }) {
             <TableCell>
               <Combobox
                 name="category"
-                items={COL_CATEGORIES.map((category) => ({
-                  label: category,
-                  value: category,
-                }))}
-                value={data.type}
+                items={categories.map((c) => {
+                  return {
+                    label: c.name,
+                    value: c.id,
+                  };
+                })}
+                value={data.categoryId}
                 setValue={(v) => {
-                  form.setValue(`expenses.${index}.type`, v as Category);
+                  form.setValue(`expenses.${index}.categoryId`, v);
                 }}
               />
             </TableCell>
@@ -651,58 +650,35 @@ function ExpensesTable({ form }: { form: UseFormReturn<Form> }) {
   );
 }
 
-function calculateNetTakeHomePay(data: Form) {
-  const fedRate = FED_TAX.rates;
-  const state = cityToState[data.city];
-  const stateRate = STATE_TAX[state];
-  const cityRate = CITY_TAX[data.city];
-
-  const preTaxIncome = data.salary;
-  const deductions = FED_TAX.standardDeduction;
-  const socialSecurity = preTaxIncome * FED_TAX.socialSecurity;
-  const medicare = preTaxIncome * FED_TAX.medicare;
-
-  // Assume all trad
-  const fourOhOneKTraditional = data.salary * data.fourOhOneK;
-  const hsa = data.hsaContribution;
-
-  // Assume max Roth
-  const roth = rothIRALimit(data);
-
-  const taxableIncome = preTaxIncome - deductions - fourOhOneKTraditional - hsa;
-
-  const fedTax = calculateTax(taxableIncome, fedRate, data.status);
-  const stateTax = calculateTax(taxableIncome, stateRate, data.status);
-  const cityTax = calculateTax(taxableIncome, cityRate, data.status);
-
-  const expenses =
-    12 * data.expenses.reduce((acc, { amount }) => acc + amount, 0);
-
-  return (
-    preTaxIncome -
-    fedTax -
-    stateTax -
-    cityTax -
-    socialSecurity -
-    medicare -
-    fourOhOneKTraditional -
-    hsa -
-    roth.maxRoth -
-    expenses
-  );
+function getCityAndState(cityId: string) {
+  const city = cityMap.get(cityId);
+  if (!city) {
+    throw new Error("Invalid city id");
+  }
+  const state = stateMap.get(city.state.id);
+  if (!state) {
+    throw new Error("Invalid state id");
+  }
+  return {
+    city: city,
+    state: state,
+  };
 }
 
-function calculateTaxesOBJECT(data: Form) {
-  // Use separate function, feels wasteful to create objects inside secant method
+function calculateNetTakeHomePay(data: MyForm) {
   const fedRate = FED_TAX.rates;
-  const state = cityToState[data.city];
-  const stateRate = STATE_TAX[state];
-  const cityRate = CITY_TAX[data.city];
+  const { city, state } = getCityAndState(data.cityId);
+  const cityRate = city.tax;
+  const stateRate = state.tax;
 
   const preTaxIncome = data.salary;
   const deductions = FED_TAX.standardDeduction;
   const socialSecurity = preTaxIncome * FED_TAX.socialSecurity;
   const medicare = preTaxIncome * FED_TAX.medicare;
+
+  // Assume within limit (already validated)
+  const roth = data.rothIRAContribution;
+  const afterTaxInvestments = data.afterTaxInvestments;
 
   // Assume all trad
   const fourOhOneK = data.salary * data.fourOhOneK;
@@ -717,7 +693,21 @@ function calculateTaxesOBJECT(data: Form) {
   const expenses =
     12 * data.expenses.reduce((acc, { amount }) => acc + amount, 0);
 
+  const netTakeHome =
+    preTaxIncome -
+    fedTax -
+    stateTax -
+    cityTax -
+    socialSecurity -
+    medicare -
+    fourOhOneK -
+    hsa -
+    roth -
+    afterTaxInvestments -
+    expenses;
+
   return {
+    netTakeHome,
     preTaxIncome,
     fedTax,
     stateTax,
@@ -731,17 +721,16 @@ function calculateTaxesOBJECT(data: Form) {
 }
 
 function calculateTax(income: number, tax: Tax, status: TaxStatus): number {
-  let taxAmount = 0;
   switch (tax.type) {
     case "status-based":
       return calculateTax(income, tax.status[status], status);
     case "bracket":
-      for (const [bracket, rate] of Object.entries(tax.brackets)) {
+      return Object.entries(tax.brackets).reduce((acc, [bracket, rate]) => {
         const bracketAmount = Math.min(income, Number(bracket));
-        taxAmount += bracketAmount * rate;
+        acc += bracketAmount * rate;
         income -= bracketAmount;
-      }
-      return taxAmount;
+        return acc;
+      }, 0);
     case "percentage":
       return income * tax.rate;
     case "flat":
@@ -793,226 +782,3 @@ function FIELD<T extends FieldValues>({
     />
   );
 }
-
-type StateAbbreviation = z.infer<typeof stateSchema>;
-
-type TaxStatus = z.infer<typeof taxStatusSchema>;
-type Bracket = Record<number, number>;
-
-type StatusBased<T> = Record<TaxStatus, T>;
-
-type Tax =
-  | {
-      type: "status-based";
-      status: StatusBased<Tax>;
-    }
-  | {
-      type: "bracket";
-      brackets: Bracket;
-    }
-  | {
-      type: "percentage";
-      rate: number;
-    }
-  | {
-      type: "flat";
-      rate: number;
-    };
-
-type RangeBased = {
-  low: number;
-  high: number;
-};
-
-type FedTax = {
-  standardDeduction: number;
-  socialSecurity: number;
-  medicare: number;
-  hsaMaxContribution: StatusBased<number>;
-  rothIRAMaxContribution: {
-    range: StatusBased<RangeBased>;
-    limit: number;
-    limit50: number;
-  };
-  rates: Tax;
-};
-
-// 2024
-const FED_TAX: FedTax = {
-  standardDeduction: 12_550,
-  socialSecurity: 0.062,
-  medicare: 0.0145,
-  hsaMaxContribution: {
-    single: 4_150,
-    married: 8_300,
-    headOfHousehold: 8_300,
-  },
-  rothIRAMaxContribution: {
-    range: {
-      single: { low: 146_000, high: 161_000 },
-      married: { low: 230_000, high: 240_000 },
-      headOfHousehold: { low: 146_000, high: 161_000 },
-    },
-    limit: 7_000,
-    limit50: 8_000,
-  },
-  rates: {
-    type: "status-based",
-    status: {
-      single: {
-        type: "bracket",
-        brackets: {
-          11_600: 0.1,
-          47_150: 0.12,
-          100_525: 0.22,
-          191_950: 0.24,
-          243_725: 0.32,
-          609_350: 0.35,
-          Infinity: 0.37,
-        },
-      },
-      married: {
-        type: "bracket",
-        brackets: {
-          23_200: 0.1,
-          94_300: 0.12,
-          201_050: 0.22,
-          383_900: 0.24,
-          487_450: 0.32,
-          731_200: 0.35,
-          Infinity: 0.37,
-        },
-      },
-      headOfHousehold: {
-        type: "bracket",
-        brackets: {
-          16_550: 0.1,
-          63_100: 0.12,
-          100_500: 0.22,
-          191_950: 0.24,
-          243_700: 0.32,
-          609_350: 0.35,
-          Infinity: 0.37,
-        },
-      },
-    },
-  },
-};
-
-type StateTax = Record<StateAbbreviation, Tax>;
-
-// 2024
-const STATE_TAX: StateTax = {
-  PA: { type: "percentage", rate: 0.0307 },
-  CA: {
-    type: "status-based",
-    status: {
-      single: {
-        type: "bracket",
-        brackets: {
-          10_756: 0.01,
-          25_499: 0.02,
-          40_245: 0.04,
-          55_866: 0.06,
-          70_606: 0.08,
-          360_659: 0.093,
-          432_787: 0.103,
-          721_314: 0.113,
-          Infinity: 0.123,
-        },
-      },
-      married: {
-        type: "bracket",
-        brackets: {
-          21_512: 0.01,
-          50_998: 0.02,
-          80_490: 0.04,
-          111_732: 0.06,
-          141_212: 0.08,
-          721_318: 0.093,
-          865_574: 0.103,
-          1_442_628: 0.113,
-          Infinity: 0.123,
-        },
-      },
-      headOfHousehold: {
-        type: "bracket",
-        brackets: {
-          21_527: 0.01,
-          51_000: 0.02,
-          65_744: 0.04,
-          81_364: 0.06,
-          96_107: 0.08,
-          490_493: 0.093,
-          588_593: 0.103,
-          980_987: 0.113,
-          Infinity: 0.123,
-        },
-      },
-    },
-  },
-};
-
-type CityTax = Record<City, Tax>;
-
-const CITY_TAX: CityTax = {
-  "Los Angeles": { type: "percentage", rate: 0 },
-  "San Francisco": { type: "percentage", rate: 0 },
-  Philadelphia: { type: "percentage", rate: 0.0375 },
-  Pittsburgh: { type: "percentage", rate: 0.03 },
-};
-
-type City = z.infer<typeof citySchema>;
-
-const cityToState: Record<City, StateAbbreviation> = {
-  "San Francisco": "CA",
-  "Los Angeles": "CA",
-  Philadelphia: "PA",
-  Pittsburgh: "PA",
-};
-
-type CityCombo = {
-  name: City;
-  stateAbbr: StateAbbreviation;
-};
-const CITIES: CityCombo[] = [
-  { name: "San Francisco", stateAbbr: "CA" },
-  { name: "Los Angeles", stateAbbr: "CA" },
-  { name: "Philadelphia", stateAbbr: "PA" },
-  { name: "Pittsburgh", stateAbbr: "PA" },
-];
-
-const COST_OF_LIVING: Record<City, CostOfLiving> = {
-  "Los Angeles": {
-    Housing: 233.3,
-    Transportation: 142.6,
-    Grocery: 111.6,
-    Utilities: 113.9,
-    Healthcare: 99.3,
-    Miscellaneous: 117.6,
-  },
-  "San Francisco": {
-    Housing: 274.9,
-    Transportation: 147.1,
-    Grocery: 122.8,
-    Utilities: 161.2,
-    Healthcare: 123.9,
-    Miscellaneous: 117.5,
-  },
-  Philadelphia: {
-    Housing: 97.4,
-    Transportation: 108.7,
-    Grocery: 103.5,
-    Utilities: 104.4,
-    Healthcare: 89.4,
-    Miscellaneous: 102.9,
-  },
-  Pittsburgh: {
-    Housing: 94.9,
-    Transportation: 110,
-    Grocery: 97.4,
-    Utilities: 118.9,
-    Healthcare: 99.5,
-    Miscellaneous: 92.2,
-  },
-};
