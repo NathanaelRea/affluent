@@ -735,6 +735,8 @@ function calculateTax(income: number, tax: Tax, status: TaxStatus): number {
       return income * tax.rate;
     case "flat":
       return income - tax.rate;
+    case "none":
+      return 0;
   }
 }
 

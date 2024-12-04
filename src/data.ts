@@ -24,6 +24,9 @@ export type Tax =
   | {
       type: "flat";
       rate: number;
+    }
+  | {
+      type: "none";
     };
 
 type RangeBased = {
@@ -72,7 +75,7 @@ export const cities: City[] = [
     id: "1",
     name: "San Francisco",
     state: { id: "1", abbreviation: "CA" },
-    tax: { type: "percentage", rate: 0 },
+    tax: { type: "none" },
     costOfLiving: {
       "1": 274.9,
       "2": 147.1,
@@ -86,7 +89,7 @@ export const cities: City[] = [
     id: "2",
     name: "Los Angeles",
     state: { id: "1", abbreviation: "CA" },
-    tax: { type: "percentage", rate: 0 },
+    tax: { type: "none" },
     costOfLiving: {
       "1": 233.3,
       "2": 142.6,
@@ -122,6 +125,190 @@ export const cities: City[] = [
       "4": 118.9,
       "5": 99.5,
       "6": 92.2,
+    },
+  },
+  {
+    id: "5",
+    name: "Chicago",
+    state: { id: "3", abbreviation: "IL" },
+    tax: { type: "none" },
+    costOfLiving: {
+      "1": 139,
+      "2": 99.5,
+      "3": 102.5,
+      "4": 96.9,
+      "5": 107.3,
+      "6": 107.3,
+    },
+  },
+  {
+    id: "6",
+    name: "Houston",
+    state: { id: "4", abbreviation: "TX" },
+    tax: { type: "none" },
+    costOfLiving: {
+      "1": 80.6,
+      "2": 92.7,
+      "3": 99.5,
+      "4": 93.8,
+      "5": 92.8,
+      "6": 102.9,
+    },
+  },
+  {
+    id: "7",
+    name: "Phoenix",
+    state: { id: "5", abbreviation: "AZ" },
+    tax: { type: "none" },
+    costOfLiving: {
+      "1": 113.5,
+      "2": 99.8,
+      "3": 103.1,
+      "4": 101.2,
+      "5": 87.7,
+      "6": 101.7,
+    },
+  },
+  {
+    id: "8",
+    name: "San Diego",
+    state: { id: "1", abbreviation: "CA" },
+    tax: { type: "none" },
+    costOfLiving: {
+      "1": 210.9,
+      "2": 142.9,
+      "3": 112.8,
+      "4": 127.5,
+      "5": 98.8,
+      "6": 112.9,
+    },
+  },
+  {
+    id: "9",
+    name: "Dallas",
+    state: { id: "4", abbreviation: "TX" },
+    tax: { type: "none" },
+    costOfLiving: {
+      "1": 97.3,
+      "2": 88.8,
+      "3": 98.6,
+      "4": 112.9,
+      "5": 99.7,
+      "6": 107.6,
+    },
+  },
+  {
+    id: "10",
+    name: "Austin",
+    state: { id: "4", abbreviation: "TX" },
+    tax: { type: "none" },
+    costOfLiving: {
+      "1": 105.2,
+      "2": 93.9,
+      "3": 97.1,
+      "4": 98.6,
+      "5": 94.7,
+      "6": 93.7,
+    },
+  },
+  {
+    id: "11",
+    name: "Boston",
+    state: { id: "6", abbreviation: "MA" },
+    tax: { type: "none" },
+    costOfLiving: {
+      "1": 212.8,
+      "2": 113.8,
+      "3": 104,
+      "4": 149,
+      "5": 123.6,
+      "6": 116.1,
+    },
+  },
+  {
+    id: "12",
+    name: "Atlanta",
+    state: { id: "7", abbreviation: "GA" },
+    tax: { type: "none" },
+    costOfLiving: {
+      "1": 91.1,
+      "2": 98.6,
+      "3": 100.6,
+      "4": 96.1,
+      "5": 104.8,
+      "6": 97.7,
+    },
+  },
+  {
+    id: "13",
+    name: "Portland",
+    state: { id: "8", abbreviation: "OR" },
+    tax: {
+      type: "status-based",
+      status: {
+        single: {
+          type: "bracket",
+          brackets: { 125_000: 0.01 },
+        },
+        headOfHousehold: {
+          type: "bracket",
+          brackets: { 250_000: 0.01 },
+        },
+        married: {
+          type: "bracket",
+          brackets: { 250_000: 0.01 },
+        },
+      },
+    },
+    costOfLiving: {
+      "1": 147.4,
+      "2": 133.3,
+      "3": 109.8,
+      "4": 85.6,
+      "5": 117.7,
+      "6": 103.6,
+    },
+  },
+  {
+    id: "14",
+    name: "Seattle",
+    state: { id: "9", abbreviation: "WA" },
+    tax: { type: "none" },
+    costOfLiving: {
+      "1": 209.2,
+      "2": 130.1,
+      "3": 112.5,
+      "4": 102.6,
+      "5": 127.4,
+      "6": 120.6,
+    },
+  },
+  {
+    id: "15",
+    name: "Denver",
+    state: { id: "10", abbreviation: "CO" },
+    tax: { type: "flat", rate: 5.75 * 12 },
+    costOfLiving: {
+      "1": 124.4,
+      "2": 91.6,
+      "3": 100.8,
+      "4": 89.7,
+      "5": 107,
+      "6": 106.4,
+    },
+  },
+  {
+    id: "16",
+    name: "Miami",
+    state: { id: "11", abbreviation: "FL" },
+    tax: { type: "none" },
+    costOfLiving: {
+      "1": 153.3,
+      "2": 103.9,
+      "3": 109,
+      "4": 107.7,
+      "5": 102.2,
+      "6": 106.7,
     },
   },
 ];
@@ -194,6 +381,128 @@ export const states: State[] = [
         },
       },
     },
+  },
+  {
+    id: "3",
+    name: "Illinois",
+    abbreviation: "IL",
+    tax: { type: "percentage", rate: 0.0495 },
+  },
+  {
+    id: "4",
+    name: "Texas",
+    abbreviation: "TX",
+    tax: { type: "none" },
+  },
+  {
+    id: "5",
+    name: "Arizona",
+    abbreviation: "AZ",
+    tax: { type: "percentage", rate: 0.025 },
+  },
+  {
+    id: "6",
+    name: "Massachusetts",
+    abbreviation: "MA",
+    tax: { type: "percentage", rate: 0.05 },
+  },
+  {
+    id: "7",
+    name: "Georgia",
+    abbreviation: "GA",
+    tax: {
+      type: "status-based",
+      status: {
+        single: {
+          type: "bracket",
+          brackets: {
+            750: 0.01,
+            2250: 0.02,
+            3750: 0.03,
+            5250: 0.04,
+            7000: 0.05,
+            Infinity: 0.0575,
+          },
+        },
+        married: {
+          type: "bracket",
+          brackets: {
+            1000: 0.01,
+            3000: 0.02,
+            5000: 0.03,
+            7000: 0.04,
+            10_000: 0.05,
+            Infinity: 0.0575,
+          },
+        },
+        headOfHousehold: {
+          type: "bracket",
+          brackets: {
+            1000: 0.01,
+            3000: 0.02,
+            5000: 0.03,
+            7000: 0.04,
+            10_000: 0.05,
+            Infinity: 0.0575,
+          },
+        },
+      },
+    },
+  },
+  {
+    id: "8",
+    name: "Oregon",
+    abbreviation: "OR",
+    tax: {
+      type: "status-based",
+      status: {
+        single: {
+          type: "bracket",
+          brackets: {
+            3_750: 0.0475,
+            9_450: 0.0675,
+            125_000: 0.0876,
+            Infinity: 0.099,
+          },
+        },
+        headOfHousehold: {
+          type: "bracket",
+          brackets: {
+            3_750: 0.0475,
+            9_450: 0.0675,
+            125_000: 0.0876,
+            Infinity: 0.099,
+          },
+        },
+        married: {
+          type: "bracket",
+          brackets: {
+            8_100: 0.0475,
+            20_400: 0.0675,
+            250_000: 0.0875,
+            Infinity: 0.099,
+          },
+        },
+      },
+    },
+  },
+  {
+    id: "9",
+    name: "Washington",
+    abbreviation: "WA",
+    tax: { type: "none" },
+  },
+  {
+    id: "10",
+    name: "Colorado",
+    abbreviation: "CO",
+    tax: { type: "percentage", rate: 0.0425 },
+  },
+  {
+    id: "11",
+    name: "Florida",
+    abbreviation: "FL",
+    tax: { type: "none" },
   },
 ];
 export const stateMap = states.reduce((acc, state) => {
