@@ -381,7 +381,7 @@ function Results({ data }: { data: MyForm }) {
       <Label>Remote Net Take Home Pay (yr, mo)</Label>
       <Input value={formatMoney(remoteNetTakeHomePay)} disabled />
       <Input value={formatMoney(remoteNetTakeHomePay / 12)} disabled />
-      <h2 className="text-xl">Overview 2</h2>
+      <h2 className="text-xl">Monthly breakdown</h2>
       <MyPieChart localData={data} remoteData={convertedData} />
     </div>
   );
@@ -597,75 +597,59 @@ function MyPieChart({
   const localCity = cityMap.get(localData.cityId);
   const remoteCity = cityMap.get(remoteData.cityId);
 
-  const localDataPie = createPieData(localData);
-  const remoteDataPie = createPieData(remoteData);
+  const localDataPie = createPieData(localData, "local");
+  const remoteDataPie = createPieData(remoteData, "remote");
 
   const chartConfig = {
-    tax: {
-      label: "Tax",
+    local: {
+      label: localCity?.name,
     },
-    socialSecurity: {
-      label: "Social Security / Medicare",
-    },
-    expenses: {
-      label: "Expenses",
-    },
-    investments: {
-      label: "Investments",
-    },
-    netTakeHome: {
-      label: "Net Take Home",
+    remote: {
+      label: remoteCity?.name,
     },
   } satisfies ChartConfig;
 
   return (
-    <div className="flex">
+    <div className="flex w-full justify-center">
       <Card>
         <CardHeader>
-          <CardTitle>{localCity?.name}</CardTitle>
+          <CardTitle>
+            {localCity?.name} vs {remoteCity?.name}
+          </CardTitle>
         </CardHeader>
         <CardContent>
           <ChartContainer
             config={chartConfig}
-            className="aspect-square h-[400px]"
+            className="aspect-square h-[350px]"
           >
             <PieChart>
               <ChartTooltip
-                cursor={false}
                 content={
                   <ChartTooltipContent
-                    hideLabel
+                    labelKey="visitors"
+                    nameKey="month"
+                    indicator="line"
                     valueFormatter={(v) => formatMoney(Number(v))}
+                    labelFormatter={(_, payload) => {
+                      return chartConfig[
+                        payload?.[0].dataKey as keyof typeof chartConfig
+                      ].label;
+                    }}
                   />
                 }
               />
-              <Pie data={localDataPie} dataKey="value" nameKey="name" />
-              <ChartLegend content={<ChartLegendContent />} />
-            </PieChart>
-          </ChartContainer>
-        </CardContent>
-      </Card>
-      <Card>
-        <CardHeader>
-          <CardTitle>{remoteCity?.name}</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <ChartContainer
-            config={chartConfig}
-            className="aspect-square h-[400px]"
-          >
-            <PieChart>
-              <ChartTooltip
-                cursor={false}
-                content={
-                  <ChartTooltipContent
-                    hideLabel
-                    valueFormatter={(v) => formatMoney(Number(v))}
-                  />
-                }
+              <Pie
+                data={localDataPie}
+                dataKey="local"
+                outerRadius={90}
+                direction={-1}
               />
-              <ChartLegend content={<ChartLegendContent />} />
-              <Pie data={remoteDataPie} dataKey="value" nameKey="name"></Pie>
+              <Pie
+                data={remoteDataPie}
+                dataKey="remote"
+                innerRadius={100}
+                outerRadius={150}
+              />
             </PieChart>
           </ChartContainer>
         </CardContent>
@@ -674,7 +658,7 @@ function MyPieChart({
   );
 }
 
-function createPieData(data: MyForm) {
+function createPieData(data: MyForm, key: string) {
   const parsedData = calculateNetTakeHomePay(data);
   const taxes = parsedData.fedTax + parsedData.stateTax + parsedData.cityTax;
   const socialSecurity = parsedData.socialSecurity + parsedData.medicare;
@@ -682,26 +666,31 @@ function createPieData(data: MyForm) {
   const investments =
     parsedData.rothIRAContribution + parsedData.afterTaxInvestments;
   const netTakeHome = parsedData.netTakeHome;
+
   return [
     {
-      name: "tax",
-      value: taxes / 12,
+      name: "Tax",
+      [key]: taxes / 12,
       fill: "#2563eb",
     },
     {
-      name: "socialSecurity",
-      value: socialSecurity / 12,
+      name: "Social Security / Medicare",
+      [key]: socialSecurity / 12,
       fill: "#60a5fa",
     },
-    { name: "expenses", value: expenses / 12, fill: "#FF8042" },
     {
-      name: "investments",
-      value: investments / 12,
+      name: "Expenses",
+      [key]: expenses / 12,
+      fill: "#FF8042",
+    },
+    {
+      name: "Investments",
+      [key]: investments / 12,
       fill: "#00C49F",
     },
     {
-      name: "netTakeHome",
-      value: netTakeHome / 12,
+      name: "Net Take Home",
+      [key]: netTakeHome / 12,
       fill: "#FFBB28",
     },
   ];
