@@ -853,7 +853,9 @@ function calculateTax(income: number, tax: Tax, status: TaxStatus): number {
     case "percentage":
       return income * tax.rate;
     case "flat":
-      return income - tax.rate;
+      return tax.rate;
+    case "none":
+      return 0;
   }
 }
 

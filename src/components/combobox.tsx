@@ -40,6 +40,10 @@ export function Combobox({
   disabled,
 }: ComboboxProps) {
   const [open, setOpen] = React.useState(false);
+  const labelToValue = items.reduce((acc, item) => {
+    acc.set(item.label, item.value);
+    return acc;
+  }, new Map<string, string>());
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
@@ -66,9 +70,10 @@ export function Combobox({
               {items.map((item) => (
                 <CommandItem
                   key={item.value}
-                  value={item.value}
+                  value={item.label}
                   onSelect={(currentValue) => {
-                    setValue(currentValue === value ? "" : currentValue);
+                    const value = labelToValue.get(currentValue);
+                    setValue(value ?? "");
                     setOpen(false);
                   }}
                 >
