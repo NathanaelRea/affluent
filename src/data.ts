@@ -311,7 +311,9 @@ export const cities: City[] = [
       "6": 106.7,
     },
   },
-];
+]
+  .sort((a, b) => a.name.localeCompare(b.name))
+  .map((c) => c as City); // if no coercion, typescript thinks typeof tax = {type:string, rate?:undefined, status?:undefined}, not a object union
 export const cityMap = cities.reduce((acc, city) => {
   acc.set(city.id, city);
   return acc;
@@ -504,7 +506,9 @@ export const states: State[] = [
     abbreviation: "FL",
     tax: { type: "none" },
   },
-];
+]
+  .sort((a, b) => a.name.localeCompare(b.name))
+  .map((c) => c as State); // if no coercion, typescript thinks typeof tax = {type:string, rate?:undefined, status?:undefined}, not a object union
 export const stateMap = states.reduce((acc, state) => {
   acc.set(state.id, state);
   return acc;
