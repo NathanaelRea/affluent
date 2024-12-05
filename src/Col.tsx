@@ -19,7 +19,7 @@ import {
   TableHeader,
   TableRow,
 } from "./components/ui/table";
-import { ReactNode, useEffect, useState } from "react";
+import { ReactNode, useEffect, useRef, useState } from "react";
 import { Label } from "./components/ui/label";
 import { formatMoney, formatPercent, secantMethod } from "./lib/utils";
 import { Combobox } from "./components/combobox";
@@ -139,7 +139,7 @@ const DEFAULT_VALUES: MyForm = {
   ],
 };
 
-function App() {
+function COL() {
   const defaultValues = loadFromLocalStorage()?.data ?? DEFAULT_VALUES;
 
   function resetDefaults() {
@@ -147,23 +147,7 @@ function App() {
     window.location.reload(); // this is kinda dumb
   }
 
-  return (
-    <div className="">
-      <nav className="bg-gray-800 p-4">
-        <div className="flex mx-auto container gap-8">
-          <a href="/" className="text-white text-lg font-bold">
-            COL
-          </a>
-          <a className="text-gray-500 text-lg font-bold">
-            Monte Carlo Drawdown
-          </a>
-          <a className="text-gray-500 text-lg font-bold">Portfolio Compare</a>
-        </div>
-      </nav>
-
-      <Inner defaultValues={defaultValues} resetDefaults={resetDefaults} />
-    </div>
-  );
+  return <Inner defaultValues={defaultValues} resetDefaults={resetDefaults} />;
 }
 
 const moneyFormatter = {
@@ -363,6 +347,13 @@ function loadFromLocalStorage(): MyFormWrapped | undefined {
 function Results({ data }: { data: MyForm }) {
   const [remoteCityId, setRemoteCityId] = useState<string>(data.cityId);
   const convertedData = convertCOLAndFindSalary(data, remoteCityId);
+  const chartRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (chartRef.current) {
+      chartRef.current.scrollIntoView({ behavior: "smooth" });
+    }
+  }, []);
 
   useEffect(() => {
     if (data.rothIRAContribution != convertedData.rothIRAContribution) {
@@ -393,7 +384,7 @@ function Results({ data }: { data: MyForm }) {
       <Label>Required Income</Label>
       <h2 className="text-2xl">{formatMoney(convertedData.salary)}</h2>
       <h2 className="text-xl">Overview</h2>
-      <div className="grid grid-cols-1 md:grid-cols-3 p-4">
+      <div className="grid grid-cols-1 md:grid-cols-3 p-4" ref={chartRef}>
         <div className="col-span-2">
           <OverviewChart localData={data} remoteData={convertedData} />
           <ExpensesChart localData={data} remoteData={convertedData} />
@@ -865,8 +856,6 @@ function calculateTax(income: number, tax: Tax, status: TaxStatus): number {
   }
 }
 
-export default App;
-
 type FIELDProps<T extends FieldValues> = {
   form: UseFormReturn<T>;
   formKey: Path<T>;
@@ -909,3 +898,5 @@ function FIELD<T extends FieldValues>({
     />
   );
 }
+
+export default COL;
