@@ -46,7 +46,6 @@ import {
   taxStatusSchema,
 } from "./data";
 import { Pie, PieChart } from "recharts";
-import { Card, CardContent, CardHeader, CardTitle } from "./components/ui/card";
 
 const expenseSchema = z.object({
   name: z.string(),
@@ -148,7 +147,23 @@ function App() {
     window.location.reload(); // this is kinda dumb
   }
 
-  return <Inner defaultValues={defaultValues} resetDefaults={resetDefaults} />;
+  return (
+    <div className="">
+      <nav className="bg-gray-800 p-4">
+        <div className="flex mx-auto container gap-8">
+          <a href="/" className="text-white text-lg font-bold">
+            COL
+          </a>
+          <a className="text-gray-500 text-lg font-bold">
+            Monte Carlo Drawdown
+          </a>
+          <a className="text-gray-500 text-lg font-bold">Portfolio Compare</a>
+        </div>
+      </nav>
+
+      <Inner defaultValues={defaultValues} resetDefaults={resetDefaults} />
+    </div>
+  );
 }
 
 const moneyFormatter = {
@@ -184,36 +199,46 @@ function Inner({
   const maxRoth = rothIRALimit(form.getValues());
 
   return (
-    <div className="flex flex-col justify-center items-center">
-      <main className="flex flex-col max-w-3xl w-full">
-        <h1 className="text-2xl">Affluent</h1>
+    <div className="flex flex-col justify-center items-center p-4">
+      <main className="flex flex-col max-w-4xl w-full">
+        <h1 className="text-2xl">Cost of living in depth</h1>
+        <h2 className="text-gray-400">
+          Compare cost of living with in depth analysis. Using fed/state/city
+          taxes, category based cost of living adjustments, and more!
+        </h2>
         <div>
-          <Button variant="ghost" onClick={resetDefaults}>
+          <Button variant="outline" onClick={resetDefaults}>
             Clear
           </Button>
         </div>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)}>
-            <Combobox
-              disabled
-              name="status"
-              items={TAX_STATUS.map((status) => ({
-                value: status,
-                label: status,
-              }))}
-              value="single"
-              setValue={() => {}}
-            />
-            <Combobox
-              disabled
-              name="city"
-              items={cities.map((c) => ({
-                label: `${c.name}, ${c.state.abbreviation}`,
-                value: c.id,
-              }))}
-              value={"3"}
-              setValue={() => {}}
-            />
+            <FormLabel>Filing Status</FormLabel>
+            <div>
+              <Combobox
+                disabled
+                name="status"
+                items={TAX_STATUS.map((status) => ({
+                  value: status,
+                  label: status,
+                }))}
+                value="single"
+                setValue={() => {}}
+              />
+            </div>
+            <FormLabel>City</FormLabel>
+            <div>
+              <Combobox
+                disabled
+                name="city"
+                items={cities.map((c) => ({
+                  label: `${c.name}, ${c.state.abbreviation}`,
+                  value: c.id,
+                }))}
+                value={"3"}
+                setValue={() => {}}
+              />
+            </div>
             <FIELD form={form} formKey="age" label="Age" />
             <h2 className="text-xl">Income</h2>
             <FIELD
@@ -351,10 +376,6 @@ function Results({ data }: { data: MyForm }) {
     }
   }, [data.rothIRAContribution, convertedData]);
 
-  const localNetTakeHomePay = calculateNetTakeHomePay(data).netTakeHome;
-  const remoteNetTakeHomePay =
-    calculateNetTakeHomePay(convertedData).netTakeHome;
-
   return (
     <div>
       <h2 className="text-xl">Results</h2>
@@ -370,19 +391,17 @@ function Results({ data }: { data: MyForm }) {
         />
       </div>
       <Label>Required Income</Label>
-      <Input value={formatMoney(convertedData.salary)} disabled />
+      <h2 className="text-2xl">{formatMoney(convertedData.salary)}</h2>
       <h2 className="text-xl">Overview</h2>
-      <OverviewChart localData={data} remoteData={convertedData} />
-      <h2 className="text-xl">Expenses Breakdown</h2>
-      <ExpensesChart localData={data} remoteData={convertedData} />
-      <Label>Local Net Take Home Pay (yr, mo)</Label>
-      <Input value={formatMoney(localNetTakeHomePay)} disabled />
-      <Input value={formatMoney(localNetTakeHomePay / 12)} disabled />
-      <Label>Remote Net Take Home Pay (yr, mo)</Label>
-      <Input value={formatMoney(remoteNetTakeHomePay)} disabled />
-      <Input value={formatMoney(remoteNetTakeHomePay / 12)} disabled />
-      <h2 className="text-xl">Monthly breakdown</h2>
-      <MyPieChart localData={data} remoteData={convertedData} />
+      <div className="grid grid-cols-1 md:grid-cols-3 p-4">
+        <div className="col-span-2">
+          <OverviewChart localData={data} remoteData={convertedData} />
+          <ExpensesChart localData={data} remoteData={convertedData} />
+        </div>
+        <div className="flex items-center justify-center">
+          <MyPieChart localData={data} remoteData={convertedData} />
+        </div>
+      </div>
     </div>
   );
 }
@@ -433,6 +452,24 @@ function blackBox(formBase: MyForm, localNetTakeHomePay: number) {
   };
 }
 
+function barChartConfig(
+  localCityId: string,
+  remoteCityId: string,
+): ChartConfig {
+  const localCity = cityMap.get(localCityId);
+  const remoteCity = cityMap.get(remoteCityId);
+  return {
+    local: {
+      label: localCity?.name,
+      color: "#FFFFFF",
+    },
+    remote: {
+      label: remoteCity?.name,
+      color: "#00FFFF",
+    },
+  } satisfies ChartConfig;
+}
+
 function ExpensesChart({
   localData,
   remoteData,
@@ -440,27 +477,17 @@ function ExpensesChart({
   localData: MyForm;
   remoteData: MyForm;
 }) {
-  const localCity = cityMap.get(localData.cityId);
-  const remoteCity = cityMap.get(remoteData.cityId);
   const chartData = localData.expenses.map((expense, index) => ({
     name: expense.name,
     local: expense.amount,
     remote: remoteData.expenses[index].amount,
   }));
 
-  const chartConfig = {
-    local: {
-      label: localCity?.name,
-      color: "#2563eb",
-    },
-    remote: {
-      label: remoteCity?.name,
-      color: "#60a5fa",
-    },
-  } satisfies ChartConfig;
-
   return (
-    <ChartContainer config={chartConfig} className="h-[200px] w-full">
+    <ChartContainer
+      config={barChartConfig(localData.cityId, remoteData.cityId)}
+      className="h-[200px]"
+    >
       <BarChart accessibilityLayer data={chartData}>
         <CartesianGrid vertical={false} />
         <YAxis
@@ -497,8 +524,6 @@ function OverviewChart({
   localData: MyForm;
   remoteData: MyForm;
 }) {
-  const localCity = cityMap.get(localData.cityId);
-  const remoteCity = cityMap.get(remoteData.cityId);
   const localTaxes = calculateNetTakeHomePay(localData);
   const remoteTaxes = calculateNetTakeHomePay(remoteData);
 
@@ -545,19 +570,11 @@ function OverviewChart({
     },
   ];
 
-  const chartConfig = {
-    local: {
-      label: localCity?.name,
-      color: "#2563eb",
-    },
-    remote: {
-      label: remoteCity?.name,
-      color: "#60a5fa",
-    },
-  } satisfies ChartConfig;
-
   return (
-    <ChartContainer config={chartConfig} className="h-[200px] w-full">
+    <ChartContainer
+      config={barChartConfig(localData.cityId, remoteData.cityId)}
+      className="h-[200px]"
+    >
       <BarChart accessibilityLayer data={chartData}>
         <CartesianGrid vertical={false} />
         <YAxis
@@ -610,55 +627,43 @@ function MyPieChart({
   } satisfies ChartConfig;
 
   return (
-    <div className="flex w-full justify-center">
-      <Card>
-        <CardHeader>
-          <CardTitle>
-            {localCity?.name} vs {remoteCity?.name}
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <ChartContainer
-            config={chartConfig}
-            className="aspect-square h-[350px]"
-          >
-            <PieChart>
-              <ChartTooltip
-                content={
-                  <ChartTooltipContent
-                    labelKey="visitors"
-                    nameKey="month"
-                    indicator="line"
-                    valueFormatter={(v) => formatMoney(Number(v))}
-                    labelFormatter={(_, payload) => {
-                      return chartConfig[
-                        payload?.[0].dataKey as keyof typeof chartConfig
-                      ].label;
-                    }}
-                  />
-                }
-              />
-              <Pie
-                data={localDataPie}
-                dataKey="local"
-                outerRadius={90}
-                direction={-1}
-              />
-              <Pie
-                data={remoteDataPie}
-                dataKey="remote"
-                innerRadius={100}
-                outerRadius={150}
-              />
-            </PieChart>
-          </ChartContainer>
-        </CardContent>
-      </Card>
-    </div>
+    <ChartContainer config={chartConfig} className="aspect-square h-[350px]">
+      <PieChart>
+        <ChartTooltip
+          content={
+            <ChartTooltipContent
+              labelKey="visitors"
+              nameKey="month"
+              indicator="line"
+              valueFormatter={(v) => formatMoney(Number(v))}
+              labelFormatter={(_, payload) => {
+                return chartConfig[
+                  payload?.[0].dataKey as keyof typeof chartConfig
+                ].label;
+              }}
+            />
+          }
+        />
+        <Pie
+          data={localDataPie}
+          dataKey="local"
+          innerRadius={50}
+          outerRadius={90}
+          paddingAngle={2}
+        />
+        <Pie
+          data={remoteDataPie}
+          dataKey="remote"
+          innerRadius={100}
+          outerRadius={150}
+          paddingAngle={2}
+        />
+      </PieChart>
+    </ChartContainer>
   );
 }
 
-function createPieData(data: MyForm, key: string) {
+function createPieData(data: MyForm, key: "local" | "remote") {
   const parsedData = calculateNetTakeHomePay(data);
   const taxes = parsedData.fedTax + parsedData.stateTax + parsedData.cityTax;
   const socialSecurity = parsedData.socialSecurity + parsedData.medicare;
@@ -667,31 +672,32 @@ function createPieData(data: MyForm, key: string) {
     parsedData.rothIRAContribution + parsedData.afterTaxInvestments;
   const netTakeHome = parsedData.netTakeHome;
 
+  // https://coolors.co/74b3ce-508991-172a3a-004346-09bc8a
   return [
     {
       name: "Tax",
       [key]: taxes / 12,
-      fill: "#2563eb",
+      fill: key === "local" ? "#E5E9EA" : "#84B3CE",
     },
     {
       name: "Social Security / Medicare",
       [key]: socialSecurity / 12,
-      fill: "#60a5fa",
+      fill: key === "local" ? "#D9DDDE" : "#508991",
     },
     {
       name: "Expenses",
       [key]: expenses / 12,
-      fill: "#FF8042",
+      fill: key === "local" ? "#C4CACF" : "#172A3A",
     },
     {
       name: "Investments",
       [key]: investments / 12,
-      fill: "#00C49F",
+      fill: key === "local" ? "#BAD5D6" : "#004346",
     },
     {
       name: "Net Take Home",
       [key]: netTakeHome / 12,
-      fill: "#FFBB28",
+      fill: key === "local" ? "#CFE1DC" : "#09BC8A",
     },
   ];
 }
