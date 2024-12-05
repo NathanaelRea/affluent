@@ -139,7 +139,7 @@ const DEFAULT_VALUES: MyForm = {
   ],
 };
 
-function App() {
+function COL() {
   const defaultValues = loadFromLocalStorage()?.data ?? DEFAULT_VALUES;
 
   function resetDefaults() {
@@ -147,23 +147,7 @@ function App() {
     window.location.reload(); // this is kinda dumb
   }
 
-  return (
-    <div className="">
-      <nav className="bg-gray-800 p-4">
-        <div className="flex mx-auto container gap-8">
-          <a href="/" className="text-white text-lg font-bold">
-            COL
-          </a>
-          <a className="text-gray-500 text-lg font-bold">
-            Monte Carlo Drawdown
-          </a>
-          <a className="text-gray-500 text-lg font-bold">Portfolio Compare</a>
-        </div>
-      </nav>
-
-      <Inner defaultValues={defaultValues} resetDefaults={resetDefaults} />
-    </div>
-  );
+  return <Inner defaultValues={defaultValues} resetDefaults={resetDefaults} />;
 }
 
 const moneyFormatter = {
@@ -872,8 +856,6 @@ function calculateTax(income: number, tax: Tax, status: TaxStatus): number {
   }
 }
 
-export default App;
-
 type FIELDProps<T extends FieldValues> = {
   form: UseFormReturn<T>;
   formKey: Path<T>;
@@ -916,3 +898,5 @@ function FIELD<T extends FieldValues>({
     />
   );
 }
+
+export default COL;
