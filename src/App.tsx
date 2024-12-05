@@ -147,7 +147,23 @@ function App() {
     window.location.reload(); // this is kinda dumb
   }
 
-  return <Inner defaultValues={defaultValues} resetDefaults={resetDefaults} />;
+  return (
+    <div className="">
+      <nav className="bg-gray-800 p-4">
+        <div className="flex mx-auto container gap-8">
+          <a href="/" className="text-white text-lg font-bold">
+            COL
+          </a>
+          <a className="text-gray-500 text-lg font-bold">
+            Monte Carlo Drawdown
+          </a>
+          <a className="text-gray-500 text-lg font-bold">Portfolio Compare</a>
+        </div>
+      </nav>
+
+      <Inner defaultValues={defaultValues} resetDefaults={resetDefaults} />
+    </div>
+  );
 }
 
 const moneyFormatter = {
@@ -183,36 +199,46 @@ function Inner({
   const maxRoth = rothIRALimit(form.getValues());
 
   return (
-    <div className="flex flex-col justify-center items-center">
-      <main className="flex flex-col max-w-3xl w-full">
-        <h1 className="text-2xl">Affluent</h1>
+    <div className="flex flex-col justify-center items-center p-4">
+      <main className="flex flex-col max-w-4xl w-full">
+        <h1 className="text-2xl">Cost of living in depth</h1>
+        <h2 className="text-gray-400">
+          Compare cost of living with in depth analysis. Using fed/state/city
+          taxes, category based cost of living adjustments, and more!
+        </h2>
         <div>
-          <Button variant="ghost" onClick={resetDefaults}>
+          <Button variant="outline" onClick={resetDefaults}>
             Clear
           </Button>
         </div>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)}>
-            <Combobox
-              disabled
-              name="status"
-              items={TAX_STATUS.map((status) => ({
-                value: status,
-                label: status,
-              }))}
-              value="single"
-              setValue={() => {}}
-            />
-            <Combobox
-              disabled
-              name="city"
-              items={cities.map((c) => ({
-                label: `${c.name}, ${c.state.abbreviation}`,
-                value: c.id,
-              }))}
-              value={"3"}
-              setValue={() => {}}
-            />
+            <FormLabel>Filing Status</FormLabel>
+            <div>
+              <Combobox
+                disabled
+                name="status"
+                items={TAX_STATUS.map((status) => ({
+                  value: status,
+                  label: status,
+                }))}
+                value="single"
+                setValue={() => {}}
+              />
+            </div>
+            <FormLabel>City</FormLabel>
+            <div>
+              <Combobox
+                disabled
+                name="city"
+                items={cities.map((c) => ({
+                  label: `${c.name}, ${c.state.abbreviation}`,
+                  value: c.id,
+                }))}
+                value={"3"}
+                setValue={() => {}}
+              />
+            </div>
             <FIELD form={form} formKey="age" label="Age" />
             <h2 className="text-xl">Income</h2>
             <FIELD
@@ -365,9 +391,9 @@ function Results({ data }: { data: MyForm }) {
         />
       </div>
       <Label>Required Income</Label>
-      <Input value={formatMoney(convertedData.salary)} disabled />
+      <h2 className="text-2xl">{formatMoney(convertedData.salary)}</h2>
       <h2 className="text-xl">Overview</h2>
-      <div className="grid grid-cols-3">
+      <div className="grid grid-cols-1 md:grid-cols-3 p-4">
         <div className="col-span-2">
           <OverviewChart localData={data} remoteData={convertedData} />
           <ExpensesChart localData={data} remoteData={convertedData} />
@@ -621,14 +647,16 @@ function MyPieChart({
         <Pie
           data={localDataPie}
           dataKey="local"
+          innerRadius={50}
           outerRadius={90}
-          direction={-1}
+          paddingAngle={2}
         />
         <Pie
           data={remoteDataPie}
           dataKey="remote"
           innerRadius={100}
           outerRadius={150}
+          paddingAngle={2}
         />
       </PieChart>
     </ChartContainer>
