@@ -5,7 +5,12 @@ import {
   ChartTooltip,
   ChartTooltipContent,
 } from "./components/ui/chart";
-import { formatMoney, moneyFormatter, percentFormatter } from "./lib/utils";
+import {
+  formatMoney,
+  formatPercent,
+  moneyFormatter,
+  percentFormatter,
+} from "./lib/utils";
 import { useState } from "react";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -21,7 +26,7 @@ type IDK = {
 
 const formSchema = z.object({
   years: z.coerce.number(),
-  simCount: z.coerce.number(),
+  simCount: z.coerce.number().max(200, "My calcs are too slow for that many!"),
   initialInvestment: z.coerce.number(),
   withdrawRate: z.coerce.number(),
 });
@@ -29,7 +34,7 @@ type MyForm = z.infer<typeof formSchema>;
 
 const defaultValues: MyForm = {
   years: 30,
-  simCount: 50,
+  simCount: 100,
   initialInvestment: 1_000_000,
   withdrawRate: 0.04,
 };
@@ -51,15 +56,24 @@ export default function Monte() {
   ];
 
   const chartData = generateChartData(portfolio, data);
+  const simBankruptMap = [...Array(data.simCount).keys()].reduce((acc, i) => {
+    const key = `sim-${i + 1}`;
+    const bankrupt = chartData[chartData.length - 1][key] == undefined;
+    if (bankrupt) {
+      acc.add(key);
+    }
+    return acc;
+  }, new Set<string>());
 
   const chartConfig = {
     value: {
       label: "Average Value",
-      color: "#FFFFFF",
+    },
+    median: {
+      label: "Median Value",
     },
     year: {
       label: "Year",
-      color: "#FFFFFF",
     },
   } satisfies ChartConfig;
 
@@ -90,6 +104,26 @@ export default function Monte() {
           </form>
         </Form>
       </div>
+      {data && (
+        <div>
+          <div>
+            Number of bankrupt simulations: {simBankruptMap.size} (
+            {formatPercent(simBankruptMap.size / data.simCount)})
+          </div>
+          <div>
+            Average terminal value:{" "}
+            {formatMoney(chartData[chartData.length - 1].value)}
+          </div>
+          <div>
+            Median terminal value:{" "}
+            {formatMoney(chartData[chartData.length - 1].median)}
+          </div>
+          <div>
+            10th percentile terminal value:{" "}
+            {formatMoney(chartData[Math.floor(data.simCount * 0.1)].value)}
+          </div>
+        </div>
+      )}
       <ChartContainer config={chartConfig}>
         <LineChart
           accessibilityLayer
@@ -112,22 +146,37 @@ export default function Monte() {
             content={
               <ChartTooltipContent
                 hideLabel
-                reqPrefix="value"
+                ignorePrefix="sim"
                 valueFormatter={(v) => formatMoney(Number(v))}
                 hideIndicator
               />
             }
           />
-          {[...Array(data.simCount).keys()].map((_, i) => (
-            <Line
-              key={i}
-              dataKey={`sim-${i + 1}`}
-              stroke="#AAAAAA"
-              dot={false}
-              strokeWidth={0.25}
-            />
-          ))}
-          <Line dataKey={"value"} stroke="#FFFFFF" strokeWidth={2} />
+          {[...Array(data.simCount).keys()].map((_, i) => {
+            const key = `sim-${i + 1}`;
+            const bankrupt = simBankruptMap.has(key);
+            return (
+              <Line
+                key={i}
+                dataKey={key}
+                stroke={bankrupt ? "#FF0000" : "#AAAAAA"}
+                dot={false}
+                strokeWidth={0.25}
+              />
+            );
+          })}
+          <Line
+            dataKey={"value"}
+            stroke="#00FFFF"
+            strokeWidth={2}
+            dot={false}
+          />
+          <Line
+            dataKey={"median"}
+            stroke="#00AAAA"
+            strokeWidth={2}
+            dot={false}
+          />
         </LineChart>
       </ChartContainer>
     </div>
@@ -152,21 +201,44 @@ function generateChartData(portfolio: Portfolio, data: MyForm) {
       (acc, result, idx) => {
         return {
           ...acc,
-          [`sim-${idx + 1}`]: result[year],
+          [`sim-${idx + 1}`]: result.results[year],
         };
       },
       { year: year } as IDK,
     );
+    const bankruptCount = results.filter(
+      (result) => result.results[year] === undefined,
+    ).length;
+    const remainingCount = data.simCount - bankruptCount;
     yearData.value =
-      results.reduce((sum, result) => sum + result[year], 0) / data.simCount;
+      remainingCount > 0
+        ? results.reduce(
+            (sum, result) => sum + (result.results[year] || 0),
+            0,
+          ) / remainingCount
+        : 0;
+
+    const sortedResults = results
+      .map((result) => result.results[year])
+      .filter((value) => value !== undefined)
+      .sort((a, b) => a! - b!);
+
+    yearData.median =
+      remainingCount > 0 ? sortedResults[Math.floor(remainingCount / 2)]! : 0;
+
     chartData.push(yearData);
   }
 
   return chartData;
 }
 
-function monteCarloDrawdown(portfolio: Portfolio, data: MyForm): number[][] {
-  const results: number[][] = [];
+type Sim = {
+  results: number[];
+  bankrupt: boolean;
+};
+
+function monteCarloDrawdown(portfolio: Portfolio, data: MyForm) {
+  const results: Sim[] = [];
   const withdrawAmount = data.initialInvestment * data.withdrawRate;
 
   for (let i = 0; i < data.simCount; i++) {
@@ -182,7 +254,10 @@ function monteCarloDrawdown(portfolio: Portfolio, data: MyForm): number[][] {
       balance *= 1 + randomNormal(portfolio[0]);
       yearlyBalances.push(balance);
     }
-    results.push(yearlyBalances);
+    results.push({
+      results: yearlyBalances,
+      bankrupt: balance <= 0,
+    });
   }
 
   return results;

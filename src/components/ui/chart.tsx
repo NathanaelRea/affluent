@@ -111,7 +111,7 @@ const ChartTooltipContent = React.forwardRef<
       nameKey?: string;
       labelKey?: string;
       valueFormatter?: (_value: ValueType) => string;
-      reqPrefix?: string;
+      ignorePrefix?: string;
     }
 >(
   (
@@ -130,7 +130,7 @@ const ChartTooltipContent = React.forwardRef<
       nameKey,
       labelKey,
       valueFormatter,
-      reqPrefix,
+      ignorePrefix,
     },
     ref,
   ) => {
@@ -189,8 +189,9 @@ const ChartTooltipContent = React.forwardRef<
         {!nestLabel ? tooltipLabel : null}
         <div className="grid gap-1.5">
           {payload
-            .filter((item) =>
-              reqPrefix ? item.name?.toString().startsWith(reqPrefix) : true,
+            .filter(
+              (item) =>
+                ignorePrefix && !item.name?.toString().startsWith(ignorePrefix),
             )
             .map((item, index) => {
               const key = `${nameKey || item.name || item.dataKey || "value"}`;
