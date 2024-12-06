@@ -189,9 +189,10 @@ const ChartTooltipContent = React.forwardRef<
         {!nestLabel ? tooltipLabel : null}
         <div className="grid gap-1.5">
           {payload
-            .filter(
-              (item) =>
-                ignorePrefix && !item.name?.toString().startsWith(ignorePrefix),
+            .filter((item) =>
+              ignorePrefix
+                ? !item.name?.toString().startsWith(ignorePrefix)
+                : true,
             )
             .map((item, index) => {
               const key = `${nameKey || item.name || item.dataKey || "value"}`;
