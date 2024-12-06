@@ -159,9 +159,9 @@ export default function Monte() {
               <Line
                 key={i}
                 dataKey={key}
-                stroke={bankrupt ? "#FF0000" : "#AAAAAA"}
+                stroke={bankrupt ? "#FF0000" : "#444444"}
                 dot={false}
-                strokeWidth={0.25}
+                strokeWidth={0.5}
               />
             );
           })}
