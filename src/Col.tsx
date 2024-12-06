@@ -137,7 +137,7 @@ const DEFAULT_VALUES: MyForm = {
   ],
 };
 
-function COL() {
+export default function COL() {
   const defaultValues = loadFromLocalStorage()?.data ?? DEFAULT_VALUES;
 
   function resetDefaults() {
@@ -843,5 +843,3 @@ function calculateTax(income: number, tax: Tax, status: TaxStatus): number {
       return 0;
   }
 }
-
-export default COL;

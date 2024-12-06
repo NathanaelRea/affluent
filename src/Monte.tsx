@@ -15,9 +15,10 @@ import { useState } from "react";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
-import { Form } from "./components/ui/form";
+import { Form, FormLabel } from "./components/ui/form";
 import { FIELD } from "./components/FIELD";
 import { Button } from "./components/ui/button";
+import { PlusIcon } from "lucide-react";
 
 type IDK = {
   year: number;
@@ -52,7 +53,7 @@ export default function Monte() {
   };
 
   const portfolio: Portfolio = [
-    { name: "Fund", meanReturn: 0.07, stdDev: 0.15, allocation: 1 },
+    { name: "VOO", meanReturn: 0.07, stdDev: 0.15, allocation: 1 },
   ];
 
   const chartData = generateChartData(portfolio, data);
@@ -78,107 +79,156 @@ export default function Monte() {
   } satisfies ChartConfig;
 
   return (
-    <div>
-      <div className="flex items-center justify-center">
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)}>
-            <FIELD form={form} formKey="years" label="Years" />
-            <FIELD
-              form={form}
-              formKey="initialInvestment"
-              label="Initial Investment"
-              format={moneyFormatter}
-            />
-            <FIELD
-              form={form}
-              formKey="withdrawRate"
-              label="Withdraw Rate"
-              format={percentFormatter}
-            />
-            <FIELD
-              form={form}
-              formKey="simCount"
-              label="Number of Simulations"
-            />
-            <Button type="submit">Simulate</Button>
-          </form>
-        </Form>
-      </div>
-      {data && (
-        <div>
-          <div>
-            Number of bankrupt simulations: {simBankruptMap.size} (
-            {formatPercent(simBankruptMap.size / data.simCount)})
-          </div>
-          <div>
-            Average terminal value:{" "}
-            {formatMoney(chartData[chartData.length - 1].value)}
-          </div>
-          <div>
-            Median terminal value:{" "}
-            {formatMoney(chartData[chartData.length - 1].median)}
-          </div>
-          <div>
-            10th percentile terminal value:{" "}
-            {formatMoney(chartData[Math.floor(data.simCount * 0.1)].value)}
-          </div>
+    <div className="flex flex-col justify-center items-center p-4">
+      <main className="flex flex-col max-w-4xl w-full">
+        <h1 className="text-2xl">Safe withdraw rate Monte Carlo</h1>
+        <h2 className="text-gray-400">
+          Use Monte Carlo simulations to see the performance of an investment
+          portfolio using a constant withdraw rate.
+        </h2>
+        <div className="flex items-center justify-center">
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(onSubmit)}>
+              <FIELD form={form} formKey="years" label="Years" />
+              <FIELD
+                form={form}
+                formKey="initialInvestment"
+                label="Initial Investment"
+                format={moneyFormatter}
+              />
+              <FIELD
+                form={form}
+                formKey="withdrawRate"
+                label="Withdraw Rate"
+                format={percentFormatter}
+              />
+              <FIELD
+                form={form}
+                formKey="simCount"
+                label="Number of Simulations"
+              />
+              <FormLabel className="font-bold text-lg">Portfolio</FormLabel>
+              <table>
+                <thead>
+                  <tr>
+                    <th className="border">Name</th>
+                    <th className="border">Mean</th>
+                    <th className="border">Std. Dev</th>
+                    <th className="border">Alloc.</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {portfolio.map((fund, index) => (
+                    <tr key={index}>
+                      <td className="border p-1">
+                        <input disabled value={fund.name} />
+                      </td>
+                      <td className="border p-1">
+                        <input
+                          disabled
+                          value={formatPercent(fund.meanReturn)}
+                        />
+                      </td>
+                      <td className="border p-1">
+                        <input disabled value={formatPercent(fund.stdDev)} />
+                      </td>
+                      <td className="border p-1">
+                        <input
+                          disabled
+                          value={formatPercent(fund.allocation)}
+                        />
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              <div className="flex justify-end">
+                <Button disabled type="button" variant="outline" size="sm">
+                  <PlusIcon className="h-2" />
+                </Button>
+              </div>
+              <div>
+                <Button type="submit">Simulate</Button>
+              </div>
+            </form>
+          </Form>
         </div>
-      )}
-      <ChartContainer config={chartConfig}>
-        <LineChart
-          accessibilityLayer
-          data={chartData}
-          margin={{
-            left: 12,
-            right: 12,
-          }}
-        >
-          <CartesianGrid vertical={false} />
-          <XAxis dataKey="year" tickMargin={8} />
-          <YAxis
-            tickLine={false}
-            tickMargin={10}
-            axisLine={false}
-            tickFormatter={formatMoney}
-          />
-          <ChartTooltip
-            cursor={false}
-            content={
-              <ChartTooltipContent
-                hideLabel
-                ignorePrefix="sim"
-                valueFormatter={(v) => formatMoney(Number(v))}
-                hideIndicator
-              />
-            }
-          />
-          {[...Array(data.simCount).keys()].map((_, i) => {
-            const key = `sim-${i + 1}`;
-            const bankrupt = simBankruptMap.has(key);
-            return (
-              <Line
-                key={i}
-                dataKey={key}
-                stroke={bankrupt ? "#FF0000" : "#444444"}
-                dot={false}
-                strokeWidth={0.5}
-              />
-            );
-          })}
-          <Line
-            dataKey={"value"}
-            stroke="#00FFFF"
-            strokeWidth={2}
-            dot={false}
-          />
-          <Line
-            dataKey={"median"}
-            stroke="#00AAAA"
-            strokeWidth={2}
-            dot={false}
-          />
-        </LineChart>
-      </ChartContainer>
+        {data && (
+          <div>
+            <div>
+              Number of bankrupt simulations: {simBankruptMap.size} (
+              {formatPercent(simBankruptMap.size / data.simCount)})
+            </div>
+            <div>
+              Average terminal value:{" "}
+              {formatMoney(chartData[chartData.length - 1].value)}
+            </div>
+            <div>
+              Median terminal value:{" "}
+              {formatMoney(chartData[chartData.length - 1].median)}
+            </div>
+            <div>
+              10th percentile terminal value:{" "}
+              {formatMoney(chartData[Math.floor(data.simCount * 0.1)].value)}
+            </div>
+          </div>
+        )}
+        <ChartContainer config={chartConfig}>
+          <LineChart
+            accessibilityLayer
+            data={chartData}
+            margin={{
+              left: 12,
+              right: 12,
+            }}
+          >
+            <CartesianGrid vertical={false} />
+            <XAxis dataKey="year" tickMargin={8} />
+            <YAxis
+              tickLine={false}
+              tickMargin={10}
+              axisLine={false}
+              tickFormatter={formatMoney}
+            />
+            <ChartTooltip
+              cursor={false}
+              content={
+                <ChartTooltipContent
+                  hideLabel
+                  ignorePrefix="sim"
+                  valueFormatter={(v) => formatMoney(Number(v))}
+                  hideIndicator
+                />
+              }
+            />
+            {[...Array(data.simCount).keys()].map((_, i) => {
+              const key = `sim-${i + 1}`;
+              const bankrupt = simBankruptMap.has(key);
+              return (
+                <Line
+                  key={i}
+                  dataKey={key}
+                  stroke={bankrupt ? "#FF0000" : "#444444"}
+                  dot={false}
+                  strokeWidth={0.5}
+                />
+              );
+            })}
+            <Line
+              dataKey={"value"}
+              stroke="#00FFFF"
+              strokeWidth={2}
+              dot={false}
+            />
+            <Line
+              dataKey={"median"}
+              stroke="#00AAAA"
+              strokeWidth={2}
+              dot={false}
+            />
+          </LineChart>
+        </ChartContainer>
+      </main>
     </div>
   );
 }

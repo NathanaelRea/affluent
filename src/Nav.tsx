@@ -20,7 +20,7 @@ export default function Nav() {
               cn("text-lg font-bold", isActive ? "text-white" : "text-gray-400")
             }
           >
-            Monte Carlo Drawdown
+            SWR
           </NavLink>
           <a className="text-gray-700 text-lg font-bold">
             <s>Portfolio Compare</s>
