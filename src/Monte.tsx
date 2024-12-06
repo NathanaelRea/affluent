@@ -5,7 +5,7 @@ import {
   ChartTooltip,
   ChartTooltipContent,
 } from "./components/ui/chart";
-import { formatMoney, moneyFormatter } from "./lib/utils";
+import { formatMoney, moneyFormatter, percentFormatter } from "./lib/utils";
 import { useState } from "react";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -21,15 +21,17 @@ type IDK = {
 
 const formSchema = z.object({
   years: z.coerce.number(),
-  iterations: z.coerce.number(),
+  simCount: z.coerce.number(),
   initialInvestment: z.coerce.number(),
+  withdrawRate: z.coerce.number(),
 });
 type MyForm = z.infer<typeof formSchema>;
 
 const defaultValues: MyForm = {
   years: 30,
-  iterations: 50,
+  simCount: 50,
   initialInvestment: 1_000_000,
+  withdrawRate: 0.04,
 };
 
 export default function Monte() {
@@ -45,7 +47,7 @@ export default function Monte() {
   };
 
   const portfolio: Portfolio = [
-    { name: "Fund A", meanReturn: -0.04, stdDev: 0.1, allocation: 1 },
+    { name: "Fund", meanReturn: 0.07, stdDev: 0.15, allocation: 1 },
   ];
 
   const chartData = generateChartData(portfolio, data);
@@ -63,19 +65,31 @@ export default function Monte() {
 
   return (
     <div>
-      <Form {...form}>
-        <form onSubmit={form.handleSubmit(onSubmit)}>
-          <FIELD form={form} formKey="years" label="Years" />
-          <FIELD form={form} formKey="iterations" label="Iterations" />
-          <FIELD
-            form={form}
-            formKey="initialInvestment"
-            label="Initial Investment"
-            format={moneyFormatter}
-          />
-          <Button type="submit">Simulate</Button>
-        </form>
-      </Form>
+      <div className="flex items-center justify-center">
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(onSubmit)}>
+            <FIELD form={form} formKey="years" label="Years" />
+            <FIELD
+              form={form}
+              formKey="initialInvestment"
+              label="Initial Investment"
+              format={moneyFormatter}
+            />
+            <FIELD
+              form={form}
+              formKey="withdrawRate"
+              label="Withdraw Rate"
+              format={percentFormatter}
+            />
+            <FIELD
+              form={form}
+              formKey="simCount"
+              label="Number of Simulations"
+            />
+            <Button type="submit">Simulate</Button>
+          </form>
+        </Form>
+      </div>
       <ChartContainer config={chartConfig}>
         <LineChart
           accessibilityLayer
@@ -104,7 +118,7 @@ export default function Monte() {
               />
             }
           />
-          {[...Array(data.iterations).keys()].map((_, i) => (
+          {[...Array(data.simCount).keys()].map((_, i) => (
             <Line
               key={i}
               dataKey={`sim-${i + 1}`}
@@ -129,12 +143,6 @@ export type Fund = {
 
 export type Portfolio = Fund[];
 
-export type SimulationParams = {
-  initialInvestment: number;
-  years: number;
-  iterations: number;
-};
-
 function generateChartData(portfolio: Portfolio, data: MyForm) {
   const results = monteCarloDrawdown(portfolio, data);
 
@@ -150,35 +158,28 @@ function generateChartData(portfolio: Portfolio, data: MyForm) {
       { year: year } as IDK,
     );
     yearData.value =
-      results.reduce((sum, result) => sum + result[year], 0) / data.iterations;
+      results.reduce((sum, result) => sum + result[year], 0) / data.simCount;
     chartData.push(yearData);
   }
 
   return chartData;
 }
 
-function monteCarloDrawdown(
-  portfolio: Portfolio,
-  data: {
-    initialInvestment: number;
-    years: number;
-    iterations: number;
-  },
-): number[][] {
+function monteCarloDrawdown(portfolio: Portfolio, data: MyForm): number[][] {
   const results: number[][] = [];
+  const withdrawAmount = data.initialInvestment * data.withdrawRate;
 
-  for (let i = 0; i < data.iterations; i++) {
+  for (let i = 0; i < data.simCount; i++) {
     let balance = data.initialInvestment;
     const yearlyBalances: number[] = [balance];
 
     for (let year = 0; year < data.years; year++) {
-      let yearlyReturn = 0;
-      portfolio.forEach((fund) => {
-        const fundReturn = fund.meanReturn + fund.stdDev * getRandomGaussian();
-        yearlyReturn += fundReturn * fund.allocation;
-      });
-      // Compound
-      balance *= 1 + yearlyReturn;
+      balance -= withdrawAmount;
+      if (balance < 0) {
+        break;
+      }
+
+      balance *= 1 + randomNormal(portfolio[0]);
       yearlyBalances.push(balance);
     }
     results.push(yearlyBalances);
@@ -187,8 +188,9 @@ function monteCarloDrawdown(
   return results;
 }
 
-const getRandomGaussian = (): number => {
+function randomNormal(fund: Fund): number {
   const u1 = Math.random();
   const u2 = Math.random();
-  return Math.sqrt(-2.0 * Math.log(u1)) * Math.cos(2.0 * Math.PI * u2);
-};
+  const z0 = Math.sqrt(-2.0 * Math.log(u1)) * Math.cos(2.0 * Math.PI * u2);
+  return fund.meanReturn + fund.stdDev * z0;
+}
