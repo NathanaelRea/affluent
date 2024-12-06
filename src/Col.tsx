@@ -1,16 +1,8 @@
-import { Input } from "./components/ui/input";
 import { Button } from "./components/ui/button";
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "./components/ui/form";
+import { Form, FormLabel } from "./components/ui/form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { FieldValues, Path, useForm, UseFormReturn } from "react-hook-form";
+import { useForm, UseFormReturn } from "react-hook-form";
 import {
   Table,
   TableBody,
@@ -19,9 +11,14 @@ import {
   TableHeader,
   TableRow,
 } from "./components/ui/table";
-import { ReactNode, useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Label } from "./components/ui/label";
-import { formatMoney, formatPercent, secantMethod } from "./lib/utils";
+import {
+  formatMoney,
+  moneyFormatter,
+  percentFormatter,
+  secantMethod,
+} from "./lib/utils";
 import { Combobox } from "./components/combobox";
 import {
   ChartConfig,
@@ -46,6 +43,7 @@ import {
   taxStatusSchema,
 } from "./data";
 import { Pie, PieChart } from "recharts";
+import { FIELD } from "./components/FIELD";
 
 const expenseSchema = z.object({
   name: z.string(),
@@ -149,16 +147,6 @@ function COL() {
 
   return <Inner defaultValues={defaultValues} resetDefaults={resetDefaults} />;
 }
-
-const moneyFormatter = {
-  formatValue: formatMoney,
-  formatInput: (value: string) => Number(value.replace(/[^0-9.]/g, "")),
-};
-
-const percentFormatter = {
-  formatValue: formatPercent,
-  formatInput: (value: string) => Number(value.replace(/[^0-9.]/g, "")) / 100,
-};
 
 function Inner({
   defaultValues,
@@ -854,49 +842,6 @@ function calculateTax(income: number, tax: Tax, status: TaxStatus): number {
     case "none":
       return 0;
   }
-}
-
-type FIELDProps<T extends FieldValues> = {
-  form: UseFormReturn<T>;
-  formKey: Path<T>;
-  label?: ReactNode;
-  placeholder?: string;
-  format?: {
-    formatValue: (_: number) => string;
-    formatInput: (_: string) => number;
-  };
-};
-function FIELD<T extends FieldValues>({
-  form,
-  formKey,
-  label,
-  placeholder,
-  format,
-}: FIELDProps<T>) {
-  return (
-    <FormField
-      control={form.control}
-      name={formKey}
-      render={({ field }) => (
-        <FormItem>
-          {label && <FormLabel>{label}</FormLabel>}
-          <FormControl>
-            <Input
-              {...field}
-              placeholder={placeholder}
-              value={
-                format ? format.formatValue(Number(field.value)) : field.value
-              }
-              onChange={(e) =>
-                format && field.onChange(format.formatInput(e.target.value))
-              }
-            />
-          </FormControl>
-          <FormMessage />
-        </FormItem>
-      )}
-    />
-  );
 }
 
 export default COL;
