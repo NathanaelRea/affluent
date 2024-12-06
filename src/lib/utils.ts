@@ -35,3 +35,13 @@ export function secantMethod(
   }
   return x2;
 }
+
+export const moneyFormatter = {
+  formatValue: formatMoney,
+  formatInput: (value: string) => Number(value.replace(/[^0-9.]/g, "")),
+};
+
+export const percentFormatter = {
+  formatValue: formatPercent,
+  formatInput: (value: string) => Number(value.replace(/[^0-9.]/g, "")) / 100,
+};
