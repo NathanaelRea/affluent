@@ -16,7 +16,7 @@ export const expenseColumns: ColumnDef<Expenses>[] = [
   },
   {
     accessorKey: "value",
-    header: "Amount ",
+    header: "Amount",
     cell: ({ row }) => formatMoney(row.original.value),
   },
 ];
