@@ -333,13 +333,13 @@ function loadFromLocalStorage(): MyFormWrapped | undefined {
 }
 
 function Results({ data }: { data: MyForm }) {
-  const [remoteCityId, setRemoteCityId] = useState<string>(data.cityId);
+  const [remoteCityId, setRemoteCityId] = useState<string>("1");
   const convertedData = convertCOLAndFindSalary(data, remoteCityId);
-  const chartRef = useRef<HTMLDivElement>(null);
+  const resultsRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    if (chartRef.current) {
-      chartRef.current.scrollIntoView({ behavior: "smooth" });
+    if (resultsRef.current) {
+      resultsRef.current.scrollIntoView({ behavior: "smooth" });
     }
   }, []);
 
@@ -357,7 +357,9 @@ function Results({ data }: { data: MyForm }) {
 
   return (
     <div>
-      <h2 className="text-xl">Results</h2>
+      <h2 className="text-xl" ref={resultsRef}>
+        Results
+      </h2>
       <div>
         <Combobox
           name="city"
@@ -372,7 +374,7 @@ function Results({ data }: { data: MyForm }) {
       <Label>Required Income</Label>
       <h2 className="text-2xl">{formatMoney(convertedData.salary)}</h2>
       <h2 className="text-xl">Overview</h2>
-      <div className="grid grid-cols-1 md:grid-cols-3 p-4" ref={chartRef}>
+      <div className="grid grid-cols-1 md:grid-cols-3 p-4">
         <div className="col-span-2">
           <OverviewChart localData={data} remoteData={convertedData} />
           <ExpensesChart localData={data} remoteData={convertedData} />
