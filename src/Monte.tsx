@@ -19,6 +19,12 @@ import { Form, FormLabel } from "./components/ui/form";
 import { FIELD } from "./components/FIELD";
 import { Button } from "./components/ui/button";
 import { PlusIcon } from "lucide-react";
+import { DataTable } from "./components/tables/basic-table";
+import {
+  Fund,
+  fundColumns,
+  fundSchema,
+} from "./components/tables/portfolio/columns";
 
 type IDK = {
   year: number;
@@ -30,6 +36,7 @@ const formSchema = z.object({
   simCount: z.coerce.number().max(200, "My calcs are too slow for that many!"),
   initialInvestment: z.coerce.number(),
   withdrawRate: z.coerce.number(),
+  portfolio: z.array(fundSchema),
 });
 type MyForm = z.infer<typeof formSchema>;
 
@@ -38,6 +45,7 @@ const defaultValues: MyForm = {
   simCount: 100,
   initialInvestment: 1_000_000,
   withdrawRate: 0.04,
+  portfolio: [{ name: "VOO", mean: 0.07, std: 0.15, weight: 1 }],
 };
 
 export default function Monte() {
@@ -52,11 +60,9 @@ export default function Monte() {
     setData(data);
   };
 
-  const portfolio: Portfolio = [
-    { name: "VOO", meanReturn: 0.07, stdDev: 0.15, allocation: 1 },
-  ];
+  const portfolio = form.watch("portfolio");
 
-  const chartData = generateChartData(portfolio, data);
+  const chartData = generateChartData(data);
   const simBankruptMap = [...Array(data.simCount).keys()].reduce((acc, i) => {
     const key = `sim-${i + 1}`;
     const bankrupt = chartData[chartData.length - 1][key] == undefined;
@@ -108,42 +114,37 @@ export default function Monte() {
                 label="Number of Simulations"
               />
               <FormLabel className="font-bold text-lg">Portfolio</FormLabel>
-              <table>
-                <thead>
-                  <tr>
-                    <th className="border">Name</th>
-                    <th className="border">Mean</th>
-                    <th className="border">Std. Dev</th>
-                    <th className="border">Alloc.</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {portfolio.map((fund, index) => (
-                    <tr key={index}>
-                      <td className="border p-1">
-                        <input disabled value={fund.name} />
-                      </td>
-                      <td className="border p-1">
-                        <input
-                          disabled
-                          value={formatPercent(fund.meanReturn)}
-                        />
-                      </td>
-                      <td className="border p-1">
-                        <input disabled value={formatPercent(fund.stdDev)} />
-                      </td>
-                      <td className="border p-1">
-                        <input
-                          disabled
-                          value={formatPercent(fund.allocation)}
-                        />
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+              <DataTable
+                columns={fundColumns}
+                data={portfolio}
+                deleteRow={(index) => {
+                  form.setValue(
+                    "portfolio",
+                    portfolio.filter((_, i) => i !== index),
+                  );
+                }}
+              />
               <div className="flex justify-end">
-                <Button disabled type="button" variant="outline" size="sm">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    const curWeight = portfolio.reduce(
+                      (acc, fund) => acc + fund.weight,
+                      0,
+                    );
+                    form.setValue("portfolio", [
+                      ...form.getValues("portfolio"),
+                      {
+                        name: "",
+                        mean: 0.07,
+                        std: 0.15,
+                        weight: 1 - curWeight,
+                      },
+                    ]);
+                  }}
+                >
                   <PlusIcon className="h-2" />
                 </Button>
               </div>
@@ -233,17 +234,8 @@ export default function Monte() {
   );
 }
 
-export type Fund = {
-  name: string;
-  meanReturn: number;
-  stdDev: number;
-  allocation: number;
-};
-
-export type Portfolio = Fund[];
-
-function generateChartData(portfolio: Portfolio, data: MyForm) {
-  const results = monteCarloDrawdown(portfolio, data);
+function generateChartData(data: MyForm) {
+  const results = monteCarloDrawdown(data);
 
   const chartData = [] as IDK[];
   for (let year = 0; year <= data.years; year++) {
@@ -287,7 +279,7 @@ type Sim = {
   bankrupt: boolean;
 };
 
-function monteCarloDrawdown(portfolio: Portfolio, data: MyForm) {
+function monteCarloDrawdown(data: MyForm) {
   const results: Sim[] = [];
   const withdrawAmount = data.initialInvestment * data.withdrawRate;
 
@@ -301,7 +293,7 @@ function monteCarloDrawdown(portfolio: Portfolio, data: MyForm) {
         break;
       }
 
-      balance *= 1 + randomNormal(portfolio[0]);
+      balance *= 1 + randomNormalForPortfolio(data.portfolio);
       yearlyBalances.push(balance);
     }
     results.push({
@@ -313,9 +305,16 @@ function monteCarloDrawdown(portfolio: Portfolio, data: MyForm) {
   return results;
 }
 
+function randomNormalForPortfolio(portfolio: Fund[]): number {
+  return portfolio.reduce(
+    (acc, fund) => acc + randomNormal(fund) * fund.weight,
+    0,
+  );
+}
+
 function randomNormal(fund: Fund): number {
   const u1 = Math.random();
   const u2 = Math.random();
   const z0 = Math.sqrt(-2.0 * Math.log(u1)) * Math.cos(2.0 * Math.PI * u2);
-  return fund.meanReturn + fund.stdDev * z0;
+  return fund.mean + fund.std * z0;
 }
