@@ -293,7 +293,7 @@ function monteCarloDrawdown(data: MyForm) {
         break;
       }
 
-      balance *= 1 + randomNormal(data.portfolio[0]);
+      balance *= 1 + randomNormalForPortfolio(data.portfolio);
       yearlyBalances.push(balance);
     }
     results.push({
@@ -303,6 +303,13 @@ function monteCarloDrawdown(data: MyForm) {
   }
 
   return results;
+}
+
+function randomNormalForPortfolio(portfolio: Fund[]): number {
+  return portfolio.reduce(
+    (acc, fund) => acc + randomNormal(fund) * fund.weight,
+    0,
+  );
 }
 
 function randomNormal(fund: Fund): number {
