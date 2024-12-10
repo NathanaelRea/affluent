@@ -4,6 +4,8 @@ import {
   ColumnDef,
   flexRender,
   getCoreRowModel,
+  RowData,
+  TableMeta,
   useReactTable,
 } from "@tanstack/react-table";
 
@@ -15,20 +17,41 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuTrigger,
+} from "../ui/dropdown-menu";
+import { Button } from "../ui/button";
+import { MoreHorizontal } from "lucide-react";
+
+declare module "@tanstack/table-core" {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars, no-unused-vars
+  interface TableMeta<TData extends RowData> {
+    deleteRow?: (_rowIndex: number) => void;
+  }
+}
 
 interface DataTableProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[];
   data: TData[];
+  deleteRow?: (_rowIndex: number) => void;
 }
 
 export function DataTable<TData, TValue>({
   columns,
   data,
+  deleteRow,
 }: DataTableProps<TData, TValue>) {
   const table = useReactTable({
     data,
     columns,
     getCoreRowModel: getCoreRowModel(),
+    meta: {
+      deleteRow,
+    },
   });
 
   return (
@@ -76,5 +99,35 @@ export function DataTable<TData, TValue>({
         </TableBody>
       </Table>
     </div>
+  );
+}
+
+export function BasicActions<TData extends RowData>({
+  meta,
+  index,
+}: {
+  meta?: TableMeta<TData>;
+  index: number;
+}) {
+  const delFun = meta?.deleteRow;
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button variant="ghost" className="h-8 w-8 p-0">
+          <span className="sr-only">Open menu</span>
+          <MoreHorizontal className="h-4 w-4" />
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end">
+        <DropdownMenuLabel>Actions</DropdownMenuLabel>
+        <DropdownMenuItem
+          className="cursor-pointer text-red-500"
+          disabled={delFun === undefined}
+          onClick={() => delFun?.(index)}
+        >
+          Delete
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
   );
 }

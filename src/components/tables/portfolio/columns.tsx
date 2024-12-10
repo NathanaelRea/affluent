@@ -1,6 +1,7 @@
 import { formatPercent } from "@/lib/utils";
 import { ColumnDef } from "@tanstack/react-table";
 import { z } from "zod";
+import { BasicActions } from "../basic-table";
 
 export const fundSchema = z.object({
   name: z.string(),
@@ -29,5 +30,11 @@ export const fundColumns: ColumnDef<Fund>[] = [
     accessorKey: "weight",
     header: "Allocation",
     cell: ({ row }) => formatPercent(row.original.weight),
+  },
+  {
+    id: "actions",
+    cell: ({ row, table }) => (
+      <BasicActions meta={table.options.meta} index={row.index} />
+    ),
   },
 ];

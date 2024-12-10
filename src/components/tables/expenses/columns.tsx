@@ -2,6 +2,8 @@ import { formatMoney } from "@/lib/utils";
 import { ColumnDef } from "@tanstack/react-table";
 import { z } from "zod";
 
+import { BasicActions } from "../basic-table";
+
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 const expensesSchema = z.object({
   name: z.string(),
@@ -18,5 +20,11 @@ export const expenseColumns: ColumnDef<Expenses>[] = [
     accessorKey: "value",
     header: "Amount",
     cell: ({ row }) => formatMoney(row.original.value),
+  },
+  {
+    id: "actions",
+    cell: ({ row, table }) => (
+      <BasicActions meta={table.options.meta} index={row.index} />
+    ),
   },
 ];

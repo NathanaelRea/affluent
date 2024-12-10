@@ -60,6 +60,8 @@ export default function Monte() {
     setData(data);
   };
 
+  const portfolio = form.watch("portfolio");
+
   const chartData = generateChartData(data);
   const simBankruptMap = [...Array(data.simCount).keys()].reduce((acc, i) => {
     const key = `sim-${i + 1}`;
@@ -112,9 +114,37 @@ export default function Monte() {
                 label="Number of Simulations"
               />
               <FormLabel className="font-bold text-lg">Portfolio</FormLabel>
-              <DataTable columns={fundColumns} data={data.portfolio} />
+              <DataTable
+                columns={fundColumns}
+                data={portfolio}
+                deleteRow={(index) => {
+                  form.setValue(
+                    "portfolio",
+                    portfolio.filter((_, i) => i !== index),
+                  );
+                }}
+              />
               <div className="flex justify-end">
-                <Button disabled type="button" variant="outline" size="sm">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    const curWeight = portfolio.reduce(
+                      (acc, fund) => acc + fund.weight,
+                      0,
+                    );
+                    form.setValue("portfolio", [
+                      ...form.getValues("portfolio"),
+                      {
+                        name: "",
+                        mean: 0.07,
+                        std: 0.15,
+                        weight: 1 - curWeight,
+                      },
+                    ]);
+                  }}
+                >
                   <PlusIcon className="h-2" />
                 </Button>
               </div>
