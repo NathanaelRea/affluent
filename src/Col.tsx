@@ -21,7 +21,7 @@ import {
   ChartTooltipContent,
 } from "./components/ui/chart";
 import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from "recharts";
-import { ChevronsUp, Minus } from "lucide-react";
+import { ChevronsUp, Minus, PlusIcon } from "lucide-react";
 import { toast } from "sonner";
 import {
   cities,
@@ -277,7 +277,29 @@ function Inner({
               format={moneyFormatter}
             />
             <h2 className="text-xl">Expenses</h2>
-            <DataTable data={form.watch("expenses")} columns={expenseColumns} setValue={(name: string, value: string) => form.setValue(name as any, value)} />
+            <DataTable
+              data={form.watch("expenses")}
+              columns={expenseColumns}
+              setValue={(name, value) => {
+                // this is kinda dumb
+                form.setValue(name as `expenses.${number}.categoryId` | `expenses.${number}.amount` | `expenses.${number}.name`, value);
+              }}
+              deleteRow={(rowIndex: number) => {
+                const expenses = form.getValues("expenses");
+                form.setValue('expenses', expenses.filter((_, i) => i != rowIndex))
+              }}
+            />
+            <div className="w-full flex justify-end">
+              <Button
+                size={"sm"}
+                variant={"outline"}
+                type="button"
+                onClick={() => {
+                  const expenses = form.getValues("expenses");
+                  form.setValue("expenses", [...expenses, { name: `Expense ${expenses.length + 1}`, amount: 100, categoryId: "6" }]);
+                }}
+              ><PlusIcon /></Button>
+            </div>
             <Button type="submit" onClick={form.handleSubmit(onSubmit)}>
               Submit
             </Button>

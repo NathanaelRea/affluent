@@ -31,8 +31,8 @@ declare module "@tanstack/table-core" {
   // eslint-disable-next-line @typescript-eslint/no-unused-vars, no-unused-vars
   interface TableMeta<TData extends RowData> {
     deleteRow?: (_rowIndex: number) => void;
-    getValue?: (name: string) => void
-    setValue?: (name: string, value: string) => void,
+    getValue?: (_name: string) => void
+    setValue?: (_name: string, _value: string) => void,
   }
 }
 
@@ -40,8 +40,8 @@ interface DataTableProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[];
   data: TData[];
   deleteRow?: (_rowIndex: number) => void;
-  getValue?: (name: string) => void
-  setValue?: (columnName: string, value: string) => void,
+  getValue?: (_name: string) => void
+  setValue?: (_name: string, _value: string) => void,
 }
 
 export function DataTable<TData, TValue>({
