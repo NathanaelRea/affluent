@@ -56,12 +56,14 @@ export const expenseColumns: ColumnDef<Expenses>[] = [
     header: "Amount",
     cell: ({ row, table }) => {
       const meta = table.options.meta;
-      console.log(row.original.amount)
       return (
         <Input
           value={formatMoney(Number(row.original.amount))}
           onChange={(e) => {
-            meta?.setValue?.(`expenses.${row.index}.amount`, e.target.value.replace("$", ""));
+            meta?.setValue?.(
+              `expenses.${row.index}.amount`,
+              e.target.value.replace("$", ""),
+            );
           }}
         />
       );
