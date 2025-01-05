@@ -92,7 +92,7 @@ function rothIRALimit(data: MyForm) {
       : modifiedAGI >= high
         ? 0
         : maxContributionForAge -
-        (modifiedAGI - low) * (maxContributionForAge / (high - low));
+          (modifiedAGI - low) * (maxContributionForAge / (high - low));
   return {
     modifiedAGI,
     maxRoth,
@@ -183,7 +183,7 @@ function Inner({
                   label: status,
                 }))}
                 value="single"
-                setValue={() => { }}
+                setValue={() => {}}
               />
             </div>
             <FormLabel>City</FormLabel>
@@ -196,7 +196,7 @@ function Inner({
                   value: c.id,
                 }))}
                 value={"3"}
-                setValue={() => { }}
+                setValue={() => {}}
               />
             </div>
             <FIELD form={form} formKey="age" label="Age" />
@@ -260,7 +260,7 @@ function Inner({
                     }
                   >
                     {maxRoth.maxRoth ==
-                      form.getValues("rothIRAContribution") ? (
+                    form.getValues("rothIRAContribution") ? (
                       <Minus />
                     ) : (
                       <ChevronsUp />
@@ -282,24 +282,41 @@ function Inner({
               columns={expenseColumns}
               setValue={(name, value) => {
                 // this is kinda dumb
-                form.setValue(name as `expenses.${number}.categoryId` | `expenses.${number}.amount` | `expenses.${number}.name`, value);
+                form.setValue(
+                  name as
+                    | `expenses.${number}.categoryId`
+                    | `expenses.${number}.amount`
+                    | `expenses.${number}.name`,
+                  value,
+                );
               }}
               deleteRow={(rowIndex: number) => {
                 const expenses = form.getValues("expenses");
-                form.setValue('expenses', expenses.filter((_, i) => i != rowIndex))
+                form.setValue(
+                  "expenses",
+                  expenses.filter((_, i) => i != rowIndex),
+                );
               }}
             />
-            <div className="w-full flex justify-end">
-              <Button
-                size={"sm"}
-                variant={"outline"}
-                type="button"
-                onClick={() => {
-                  const expenses = form.getValues("expenses");
-                  form.setValue("expenses", [...expenses, { name: `Expense ${expenses.length + 1}`, amount: 100, categoryId: "6" }]);
-                }}
-              ><PlusIcon /></Button>
-            </div>
+            <Button
+              size={"sm"}
+              variant={"outline"}
+              type="button"
+              className="w-full"
+              onClick={() => {
+                const expenses = form.getValues("expenses");
+                form.setValue("expenses", [
+                  ...expenses,
+                  {
+                    name: `Expense ${expenses.length + 1}`,
+                    amount: 100,
+                    categoryId: "6",
+                  },
+                ]);
+              }}
+            >
+              <PlusIcon />
+            </Button>
             <Button type="submit" onClick={form.handleSubmit(onSubmit)}>
               Submit
             </Button>
