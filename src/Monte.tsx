@@ -26,14 +26,14 @@ import {
   fundSchema,
 } from "./components/tables/portfolio/columns";
 
-type IDK = {
+type Simulation = {
   year: number;
   [key: string]: number;
 };
 
 const formSchema = z.object({
   years: z.coerce.number(),
-  simCount: z.coerce.number().max(200, "My calcs are too slow for that many!"),
+  simCount: z.coerce.number().max(1000, "Probably too many!"),
   initialInvestment: z.coerce.number(),
   withdrawRate: z.coerce.number(),
   portfolio: z.array(fundSchema),
@@ -45,7 +45,10 @@ const defaultValues: MyForm = {
   simCount: 100,
   initialInvestment: 1_000_000,
   withdrawRate: 0.04,
-  portfolio: [{ name: "VOO", mean: 0.07, std: 0.15, weight: 1 }],
+  portfolio: [
+    { name: "Stocks", mean: 0.08, std: 0.15, weight: 0.6 },
+    { name: "Bonds", mean: 0.03, std: 0.05, weight: 0.4 },
+  ],
 };
 
 export default function Monte() {
@@ -112,7 +115,7 @@ export default function Monte() {
                   0,
                 );
                 form.setValue("portfolio", [
-                  ...form.getValues("portfolio"),
+                  ...portfolio,
                   {
                     name: "",
                     mean: 0.07,
@@ -159,9 +162,9 @@ function Chart({ data }: { data: MyForm }) {
   } satisfies ChartConfig;
 
   const animationEnabled = data.simCount <= 100;
+  const lastYearData = chartData[chartData.length - 1];
 
   const chartRef = useRef<HTMLDivElement>(null);
-
   useEffect(() => {
     if (chartRef.current) {
       chartRef.current.scrollIntoView({ behavior: "smooth" });
@@ -175,17 +178,10 @@ function Chart({ data }: { data: MyForm }) {
           Number of bankrupt simulations: {simBankruptMap.size} (
           {formatPercent(simBankruptMap.size / data.simCount)})
         </div>
+        <div>Average terminal value: {formatMoney(lastYearData.value)}</div>
+        <div>Median terminal value: {formatMoney(lastYearData.median)}</div>
         <div>
-          Average terminal value:{" "}
-          {formatMoney(chartData[chartData.length - 1].value)}
-        </div>
-        <div>
-          Median terminal value:{" "}
-          {formatMoney(chartData[chartData.length - 1].median)}
-        </div>
-        <div>
-          10th percentile terminal value:{" "}
-          {formatMoney(chartData[Math.floor(data.simCount * 0.1)].value)}
+          10th percentile terminal value: {formatMoney(lastYearData.tenth)}
         </div>
       </div>
       <ChartContainer config={chartConfig} ref={chartRef}>
@@ -251,8 +247,8 @@ function Chart({ data }: { data: MyForm }) {
 function generateChartData(data: MyForm) {
   const results = monteCarloDrawdown(data);
 
-  const chartData = [] as IDK[];
-  for (let year = 0; year <= data.years; year++) {
+  const chartData = [] as Simulation[];
+  for (let year = 0; year < data.years; year++) {
     const yearData = results.reduce(
       (acc, result, idx) => {
         return {
@@ -260,27 +256,30 @@ function generateChartData(data: MyForm) {
           [`sim-${idx + 1}`]: result.results[year],
         };
       },
-      { year: year } as IDK,
+      { year: year } as Simulation,
     );
     const bankruptCount = results.filter(
       (result) => result.results[year] === undefined,
     ).length;
+
     const remainingCount = data.simCount - bankruptCount;
-    yearData.value =
-      remainingCount > 0
-        ? results.reduce(
-            (sum, result) => sum + (result.results[year] || 0),
-            0,
-          ) / remainingCount
-        : 0;
+    if (remainingCount > 0) {
+      yearData.value =
+        results.reduce((sum, result) => sum + (result.results[year] || 0), 0) /
+        remainingCount;
 
-    const sortedResults = results
-      .map((result) => result.results[year])
-      .filter((value) => value !== undefined)
-      .sort((a, b) => a! - b!);
+      const sortedResults = results
+        .map((result) => result.results[year])
+        .filter((value) => value !== undefined)
+        .sort((a, b) => a! - b!);
 
-    yearData.median =
-      remainingCount > 0 ? sortedResults[Math.floor(remainingCount / 2)]! : 0;
+      yearData.median = sortedResults[Math.floor(remainingCount * 0.5)];
+      yearData.tenth = sortedResults[Math.floor(remainingCount * 0.1)];
+    } else {
+      yearData.value = 0;
+      yearData.median = 0;
+      yearData.tenth = 0;
+    }
 
     chartData.push(yearData);
   }
