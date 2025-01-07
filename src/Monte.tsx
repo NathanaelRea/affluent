@@ -33,8 +33,9 @@ type Simulation = {
 
 const formSchema = z.object({
   years: z.coerce.number(),
-  simCount: z.coerce.number().max(1000, "Probably too many!"),
+  simCount: z.coerce.number().max(500, "> 200 doesn't look good on graph"),
   initialInvestment: z.coerce.number(),
+  inflation: z.coerce.number(),
   withdrawRate: z.coerce.number(),
   portfolio: z.array(fundSchema),
 });
@@ -44,10 +45,11 @@ const defaultValues: MyForm = {
   years: 30,
   simCount: 100,
   initialInvestment: 1_000_000,
+  inflation: 0.02,
   withdrawRate: 0.04,
   portfolio: [
-    { name: "Stocks", mean: 0.08, std: 0.15, weight: 0.6 },
-    { name: "Bonds", mean: 0.03, std: 0.05, weight: 0.4 },
+    { name: "Stocks", mean: 0.08, std: 0.15, weight: 0.5 },
+    { name: "Bonds", mean: 0.03, std: 0.05, weight: 0.5 },
   ],
 };
 
@@ -86,6 +88,12 @@ export default function Monte() {
               form={form}
               formKey="withdrawRate"
               label="Withdraw Rate"
+              format={percentFormatter}
+            />
+            <FIELD
+              form={form}
+              formKey="inflation"
+              label="Inflation"
               format={percentFormatter}
             />
             <FIELD
@@ -227,12 +235,14 @@ function Chart({ data }: { data: MyForm }) {
             );
           })}
           <Line
+            isAnimationActive={animationEnabled}
             dataKey={"value"}
             stroke="#00FFFF"
             strokeWidth={2}
             dot={false}
           />
           <Line
+            isAnimationActive={animationEnabled}
             dataKey={"median"}
             stroke="#00AAAA"
             strokeWidth={2}
@@ -307,6 +317,7 @@ function monteCarloDrawdown(data: MyForm) {
       }
 
       balance *= 1 + randomNormalForPortfolio(data.portfolio);
+      balance *= 1 - data.inflation;
       yearlyBalances.push(balance);
     }
     results.push({
