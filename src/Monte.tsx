@@ -11,7 +11,7 @@ import {
   moneyFormatter,
   percentFormatter,
 } from "./lib/utils";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useTransition } from "react";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
@@ -33,7 +33,7 @@ type Simulation = {
 
 const formSchema = z.object({
   years: z.coerce.number(),
-  simCount: z.coerce.number().max(500, "> 200 doesn't look good on graph"),
+  simCount: z.coerce.number().max(200, ">200 is a bit slow for recharts"),
   initialInvestment: z.coerce.number(),
   inflation: z.coerce.number(),
   withdrawRate: z.coerce.number(),
@@ -54,7 +54,8 @@ const defaultValues: MyForm = {
 };
 
 export default function Monte() {
-  const [data, setData] = useState<MyForm>();
+  const [parsedData, setParsedData] = useState<ParsedData>();
+  const [isPending, startTransition] = useTransition();
 
   const form = useForm<MyForm>({
     resolver: zodResolver(formSchema),
@@ -62,7 +63,19 @@ export default function Monte() {
   });
 
   const onSubmit = (data: MyForm) => {
-    setData(data);
+    startTransition(async () => {
+      const chartData = await generateChartData(data);
+      const simCount = data.simCount;
+      const simBankruptMap = [...Array(simCount).keys()].reduce((acc, i) => {
+        const key = `sim-${i + 1}`;
+        const bankrupt = chartData[chartData.length - 1][key] == undefined;
+        if (bankrupt) {
+          acc.add(key);
+        }
+        return acc;
+      }, new Set<string>());
+      setParsedData({ chartData, simCount, simBankruptMap });
+    });
   };
 
   const portfolio = form.watch("portfolio");
@@ -136,26 +149,26 @@ export default function Monte() {
               <PlusIcon className="h-2" />
             </Button>
             <div>
-              <Button type="submit">Simulate</Button>
+              <Button type="submit" disabled={isPending}>
+                Simulate
+              </Button>
             </div>
           </form>
         </Form>
-        {data && <Chart data={data} />}
+        {parsedData && <Chart parsedData={parsedData} />}
       </main>
     </div>
   );
 }
 
-function Chart({ data }: { data: MyForm }) {
-  const chartData = generateChartData(data);
-  const simBankruptMap = [...Array(data.simCount).keys()].reduce((acc, i) => {
-    const key = `sim-${i + 1}`;
-    const bankrupt = chartData[chartData.length - 1][key] == undefined;
-    if (bankrupt) {
-      acc.add(key);
-    }
-    return acc;
-  }, new Set<string>());
+type ParsedData = {
+  chartData: Simulation[];
+  simBankruptMap: Set<string>;
+  simCount: number;
+};
+
+function Chart({ parsedData }: { parsedData: ParsedData }) {
+  const { chartData, simBankruptMap, simCount } = parsedData;
 
   const chartConfig = {
     value: {
@@ -169,7 +182,7 @@ function Chart({ data }: { data: MyForm }) {
     },
   } satisfies ChartConfig;
 
-  const animationEnabled = data.simCount <= 100;
+  const animationEnabled = simCount <= 100;
   const lastYearData = chartData[chartData.length - 1];
 
   const chartRef = useRef<HTMLDivElement>(null);
@@ -184,7 +197,7 @@ function Chart({ data }: { data: MyForm }) {
       <div>
         <div>
           Number of bankrupt simulations: {simBankruptMap.size} (
-          {formatPercent(simBankruptMap.size / data.simCount)})
+          {formatPercent(simBankruptMap.size / simCount)})
         </div>
         <div>Average terminal value: {formatMoney(lastYearData.value)}</div>
         <div>Median terminal value: {formatMoney(lastYearData.median)}</div>
@@ -220,7 +233,7 @@ function Chart({ data }: { data: MyForm }) {
               />
             }
           />
-          {[...Array(data.simCount).keys()].map((_, i) => {
+          {[...Array(simCount).keys()].map((_, i) => {
             const key = `sim-${i + 1}`;
             const bankrupt = simBankruptMap.has(key);
             return (
@@ -254,7 +267,7 @@ function Chart({ data }: { data: MyForm }) {
   );
 }
 
-function generateChartData(data: MyForm) {
+async function generateChartData(data: MyForm) {
   const results = monteCarloDrawdown(data);
 
   const chartData = [] as Simulation[];
