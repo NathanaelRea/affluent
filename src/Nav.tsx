@@ -3,7 +3,7 @@ import { cn } from "./lib/utils";
 
 export default function Nav() {
   return (
-    <div className="">
+    <div className="h-full min-h-screen">
       <nav className="bg-gray-800 p-4">
         <div className="flex mx-auto container gap-8">
           <NavLink

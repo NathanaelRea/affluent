@@ -31,8 +31,8 @@ declare module "@tanstack/table-core" {
   // eslint-disable-next-line @typescript-eslint/no-unused-vars, no-unused-vars
   interface TableMeta<TData extends RowData> {
     deleteRow?: (_rowIndex: number) => void;
-    getValue?: (_name: string) => void
-    setValue?: (_name: string, _value: string) => void,
+    getValue?: (_name: string) => void;
+    setValue?: (_name: string, _value: string) => void;
   }
 }
 
@@ -40,8 +40,8 @@ interface DataTableProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[];
   data: TData[];
   deleteRow?: (_rowIndex: number) => void;
-  getValue?: (_name: string) => void
-  setValue?: (_name: string, _value: string) => void,
+  getValue?: (_name: string) => void;
+  setValue?: (_name: string, _value: string) => void;
 }
 
 export function DataTable<TData, TValue>({
@@ -49,7 +49,7 @@ export function DataTable<TData, TValue>({
   data,
   deleteRow,
   setValue,
-  getValue
+  getValue,
 }: DataTableProps<TData, TValue>) {
   const table = useReactTable({
     data,
@@ -58,7 +58,7 @@ export function DataTable<TData, TValue>({
     meta: {
       deleteRow,
       setValue,
-      getValue
+      getValue,
     },
   });
 
@@ -74,9 +74,9 @@ export function DataTable<TData, TValue>({
                     {header.isPlaceholder
                       ? null
                       : flexRender(
-                        header.column.columnDef.header,
-                        header.getContext(),
-                      )}
+                          header.column.columnDef.header,
+                          header.getContext(),
+                        )}
                   </TableHead>
                 );
               })}
