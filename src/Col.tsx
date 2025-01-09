@@ -25,23 +25,26 @@ import { ChevronsUp, Minus, PlusIcon } from "lucide-react";
 import { toast } from "sonner";
 import {
   cities,
-  cityMap,
-  FED_TAX,
-  stateMap,
   Tax,
   TAX_STATUS,
   TaxStatus,
   taxStatusSchema,
+  citySchema,
+  City,
+  Category,
+  CITIES,
+  states,
 } from "./data";
 import { Pie, PieChart } from "recharts";
 import { FIELD } from "./components/FIELD";
 import { expensesSchema } from "./components/tables/expenses/columns";
 import { DataTable } from "./components/tables/basic-table";
 import { expenseColumns } from "./components/tables/expenses/columns";
+import { FED_TAX, CITY_TAX, STATE_TAX, COST_OF_LIVING } from "./data2024";
 
 const formSchema = z
   .object({
-    cityId: z.string(),
+    city: citySchema,
     status: taxStatusSchema,
     age: z.coerce.number(),
     salary: z.coerce.number(),
@@ -106,8 +109,8 @@ function hsaLimit(data: MyForm) {
 type MyForm = z.infer<typeof formSchema>;
 
 const DEFAULT_VALUES: MyForm = {
-  cityId: "3",
-  status: "single",
+  city: "Philadelphia",
+  status: "Single",
   salary: 100_000,
   age: 30,
   fourOhOneK: 0.05,
@@ -115,13 +118,13 @@ const DEFAULT_VALUES: MyForm = {
   rothIRAContribution: 4_810,
   afterTaxInvestments: 0,
   expenses: [
-    { name: "Rent", amount: 1_000, categoryId: "1" },
-    { name: "Renter's Insurance", amount: 10, categoryId: "1" },
-    { name: "Food", amount: 300, categoryId: "3" },
-    { name: "Utilities", amount: 100, categoryId: "4" },
-    { name: "Car", amount: 500, categoryId: "2" },
-    { name: "Entertainment", amount: 100, categoryId: "6" },
-    { name: "Misc", amount: 100, categoryId: "6" },
+    { name: "Rent", amount: 1_000, category: "Housing" },
+    { name: "Renter's Insurance", amount: 10, category: "Housing" },
+    { name: "Food", amount: 300, category: "Grocery" },
+    { name: "Utilities", amount: 100, category: "Utilities" },
+    { name: "Car", amount: 500, category: "Transportation" },
+    { name: "Entertainment", amount: 100, category: "Miscellaneous" },
+    { name: "Misc", amount: 100, category: "Miscellaneous" },
   ],
 };
 
@@ -182,7 +185,7 @@ function Inner({
                   value: status,
                   label: status,
                 }))}
-                value="single"
+                value="Single"
                 setValue={() => {}}
               />
             </div>
@@ -191,11 +194,11 @@ function Inner({
               <Combobox
                 disabled
                 name="city"
-                items={cities.map((c) => ({
-                  label: `${c.name}, ${c.state.abbreviation}`,
-                  value: c.id,
+                items={CITIES.map((c) => ({
+                  label: `${c}, ${states[cities[c].state].abbreviation}`,
+                  value: c,
                 }))}
-                value={"3"}
+                value={"Philadelphia"}
                 setValue={() => {}}
               />
             </div>
@@ -284,7 +287,7 @@ function Inner({
                 // this is kinda dumb
                 form.setValue(
                   name as
-                    | `expenses.${number}.categoryId`
+                    | `expenses.${number}.category`
                     | `expenses.${number}.amount`
                     | `expenses.${number}.name`,
                   value,
@@ -310,7 +313,7 @@ function Inner({
                   {
                     name: `Expense ${expenses.length + 1}`,
                     amount: 100,
-                    categoryId: "6",
+                    category: "Miscellaneous",
                   },
                 ]);
               }}
@@ -360,8 +363,8 @@ function loadFromLocalStorage(): MyFormWrapped | undefined {
 }
 
 function Results({ data }: { data: MyForm }) {
-  const [remoteCityId, setRemoteCityId] = useState<string>("1");
-  const convertedData = convertCOLAndFindSalary(data, remoteCityId);
+  const [remoteCity, setRemoteCity] = useState<City>("San Francisco");
+  const convertedData = convertCOLAndFindSalary(data, remoteCity);
   const resultsRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -390,12 +393,12 @@ function Results({ data }: { data: MyForm }) {
       <div>
         <Combobox
           name="city"
-          items={cities.map((c) => ({
-            label: `${c.name}, ${c.state.abbreviation}`,
-            value: c.id,
+          items={CITIES.map((c) => ({
+            label: `${c}, ${states[cities[c].state].abbreviation}`,
+            value: c,
           }))}
-          value={remoteCityId}
-          setValue={(c) => setRemoteCityId(c)}
+          value={remoteCity}
+          setValue={(c) => setRemoteCity(c as City)}
         />
       </div>
       <Label>Required Income</Label>
@@ -414,7 +417,7 @@ function Results({ data }: { data: MyForm }) {
   );
 }
 
-function convertCOLAndFindSalary(data: MyForm, remoteCityId: string): MyForm {
+function convertCOLAndFindSalary(data: MyForm, remoteCity: City): MyForm {
   const localAfterTax = data.rothIRAContribution + data.afterTaxInvestments;
   const dataNoAfterTax: MyForm = {
     ...data,
@@ -423,15 +426,10 @@ function convertCOLAndFindSalary(data: MyForm, remoteCityId: string): MyForm {
   };
   const newData: MyForm = {
     ...dataNoAfterTax,
-    cityId: remoteCityId,
+    city: remoteCity,
     expenses: data.expenses.map((e) => ({
       ...e,
-      amount: convertCostOfLiving(
-        e.amount,
-        data.cityId,
-        remoteCityId,
-        e.categoryId,
-      ),
+      amount: convertCostOfLiving(e.amount, data.city, remoteCity, e.category),
     })),
   };
 
@@ -460,19 +458,14 @@ function blackBox(formBase: MyForm, localNetTakeHomePay: number) {
   };
 }
 
-function barChartConfig(
-  localCityId: string,
-  remoteCityId: string,
-): ChartConfig {
-  const localCity = cityMap.get(localCityId);
-  const remoteCity = cityMap.get(remoteCityId);
+function barChartConfig(localCity: City, remoteCity: City): ChartConfig {
   return {
     local: {
-      label: localCity?.name,
+      label: localCity,
       color: "#FFFFFF",
     },
     remote: {
-      label: remoteCity?.name,
+      label: remoteCity,
       color: "#00FFFF",
     },
   } satisfies ChartConfig;
@@ -493,7 +486,7 @@ function ExpensesChart({
 
   return (
     <ChartContainer
-      config={barChartConfig(localData.cityId, remoteData.cityId)}
+      config={barChartConfig(localData.city, remoteData.city)}
       className="h-[200px]"
     >
       <BarChart accessibilityLayer data={chartData}>
@@ -580,7 +573,7 @@ function OverviewChart({
 
   return (
     <ChartContainer
-      config={barChartConfig(localData.cityId, remoteData.cityId)}
+      config={barChartConfig(localData.city, remoteData.city)}
       className="h-[200px]"
     >
       <BarChart accessibilityLayer data={chartData}>
@@ -619,18 +612,15 @@ function MyPieChart({
   localData: MyForm;
   remoteData: MyForm;
 }) {
-  const localCity = cityMap.get(localData.cityId);
-  const remoteCity = cityMap.get(remoteData.cityId);
-
   const localDataPie = createPieData(localData, "local");
   const remoteDataPie = createPieData(remoteData, "remote");
 
   const chartConfig = {
     local: {
-      label: localCity?.name,
+      label: localData.city,
     },
     remote: {
-      label: remoteCity?.name,
+      label: remoteData.city,
     },
   } satisfies ChartConfig;
 
@@ -712,38 +702,24 @@ function createPieData(data: MyForm, key: "local" | "remote") {
 
 function convertCostOfLiving(
   value: number,
-  localCityId: string,
-  remoteCityId: string,
-  categoryId: string,
+  localCity: City,
+  remoteCity: City,
+  category: Category,
 ): number {
-  const localCOL = cityMap.get(localCityId)?.costOfLiving[categoryId];
-  const remoteCOL = cityMap.get(remoteCityId)?.costOfLiving[categoryId];
+  const localCOL = COST_OF_LIVING[localCity][category];
+  const remoteCOL = COST_OF_LIVING[remoteCity][category];
   if (!localCOL || !remoteCOL) {
     throw new Error("Invalid city id");
   }
   return value * (remoteCOL / localCOL);
 }
 
-function getCityAndState(cityId: string) {
-  const city = cityMap.get(cityId);
-  if (!city) {
-    throw new Error("Invalid city id");
-  }
-  const state = stateMap.get(city.state.id);
-  if (!state) {
-    throw new Error("Invalid state id");
-  }
-  return {
-    city: city,
-    state: state,
-  };
-}
-
 function calculateNetTakeHomePay(data: MyForm) {
   const fedRate = FED_TAX.rates;
-  const { city, state } = getCityAndState(data.cityId);
-  const cityRate = city.tax;
-  const stateRate = state.tax;
+  const city = data.city;
+  const state = cities[city].state;
+  const cityRate = CITY_TAX[city];
+  const stateRate = STATE_TAX[state];
 
   const preTaxIncome = data.salary;
   const deductions = FED_TAX.standardDeduction;
@@ -797,6 +773,7 @@ function calculateNetTakeHomePay(data: MyForm) {
 }
 
 function calculateTax(income: number, tax: Tax, status: TaxStatus): number {
+  if (!tax) return 0;
   switch (tax.type) {
     case "status-based":
       return calculateTax(income, tax.status[status], status);
@@ -811,7 +788,5 @@ function calculateTax(income: number, tax: Tax, status: TaxStatus): number {
       return income * tax.rate;
     case "flat":
       return tax.rate;
-    case "none":
-      return 0;
   }
 }
