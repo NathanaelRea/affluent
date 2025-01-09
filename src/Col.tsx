@@ -311,7 +311,6 @@ function Inner({
             >
               <PlusIcon />
             </Button>
-
             <div className="flex items-center justify-between">
               <Button variant="outline" onClick={resetDefaults}>
                 Reset

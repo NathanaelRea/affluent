@@ -181,7 +181,7 @@ function Chart({ parsedData }: { parsedData: ParsedData }) {
     },
   } satisfies ChartConfig;
 
-  const extraLines = ["average", "median", "tenth"];
+  const extraLines = ["value", "median", "tenth"];
 
   const animationEnabled = simCount <= 100;
   const lastYearData = chartData[chartData.length - 1];
@@ -249,27 +249,16 @@ function Chart({ parsedData }: { parsedData: ParsedData }) {
               />
             );
           })}
-          <Line
-            isAnimationActive={animationEnabled}
-            dataKey={"value"}
-            stroke="#00FFFF"
-            strokeWidth={2}
-            dot={false}
-          />
-          <Line
-            isAnimationActive={animationEnabled}
-            dataKey={"median"}
-            stroke="#00AAAA"
-            strokeWidth={2}
-            dot={false}
-          />
-          <Line
-            isAnimationActive={animationEnabled}
-            dataKey={"tenth"}
-            stroke="#00AAAA"
-            strokeWidth={2}
-            dot={false}
-          />
+          {extraLines.map((dataKey) => (
+            <Line
+              key={dataKey}
+              isAnimationActive={animationEnabled}
+              dataKey={dataKey}
+              stroke="#00FFFF"
+              strokeWidth={2}
+              dot={false}
+            />
+          ))}
         </LineChart>
       </ChartContainer>
     </>
