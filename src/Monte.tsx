@@ -77,7 +77,7 @@ export default function Monte() {
   const portfolio = form.watch("portfolio");
 
   return (
-    <div className="flex flex-col justify-center items-center p-4">
+    <div className="flex flex-col justify-center items-center p-4 h-full">
       <main className="flex flex-col max-w-4xl w-full">
         <h1 className="text-2xl">Safe withdraw rate Monte Carlo</h1>
         <h2 className="text-gray-400">
@@ -85,7 +85,7 @@ export default function Monte() {
           portfolio using a constant withdraw rate.
         </h2>
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)}>
+          <form onSubmit={form.handleSubmit(onSubmit)} className="py-8">
             <FIELD form={form} formKey="years" label="Years" />
             <InputWithFormatRHF
               form={form}
@@ -144,7 +144,7 @@ export default function Monte() {
             >
               <PlusIcon className="h-2" />
             </Button>
-            <div>
+            <div className="flex justify-end">
               <Button type="submit" disabled={isPending}>
                 Simulate
               </Button>
@@ -168,15 +168,20 @@ function Chart({ parsedData }: { parsedData: ParsedData }) {
 
   const chartConfig = {
     value: {
-      label: "Average Value",
+      label: "Average",
     },
     median: {
-      label: "Median Value",
+      label: "Median",
+    },
+    tenth: {
+      label: "Tenth Percentile",
     },
     year: {
       label: "Year",
     },
   } satisfies ChartConfig;
+
+  const extraLines = ["value", "median", "tenth"];
 
   const animationEnabled = simCount <= 100;
   const lastYearData = chartData[chartData.length - 1];
@@ -203,6 +208,7 @@ function Chart({ parsedData }: { parsedData: ParsedData }) {
       </div>
       <ChartContainer config={chartConfig} ref={chartRef}>
         <LineChart
+          className="w-full p-2"
           accessibilityLayer
           data={chartData}
           margin={{
@@ -243,20 +249,16 @@ function Chart({ parsedData }: { parsedData: ParsedData }) {
               />
             );
           })}
-          <Line
-            isAnimationActive={animationEnabled}
-            dataKey={"value"}
-            stroke="#00FFFF"
-            strokeWidth={2}
-            dot={false}
-          />
-          <Line
-            isAnimationActive={animationEnabled}
-            dataKey={"median"}
-            stroke="#00AAAA"
-            strokeWidth={2}
-            dot={false}
-          />
+          {extraLines.map((dataKey) => (
+            <Line
+              key={dataKey}
+              isAnimationActive={animationEnabled}
+              dataKey={dataKey}
+              stroke="#00FFFF"
+              strokeWidth={2}
+              dot={false}
+            />
+          ))}
         </LineChart>
       </ChartContainer>
     </>
@@ -267,7 +269,8 @@ async function generateChartData(data: MyForm) {
   const results = monteCarloDrawdown(data);
 
   const chartData = [] as Simulation[];
-  for (let year = 0; year < data.years; year++) {
+  // Include last because 0th is initial
+  for (let year = 0; year <= data.years; year++) {
     const yearData = results.reduce(
       (acc, result, idx) => {
         return {
@@ -319,7 +322,8 @@ function monteCarloDrawdown(data: MyForm) {
     let balance = data.initialInvestment;
     const yearlyBalances: number[] = [balance];
 
-    for (let year = 0; year < data.years; year++) {
+    // Include last because 0th is initial
+    for (let year = 0; year <= data.years; year++) {
       balance -= withdrawAmount;
       if (balance < 0) {
         break;

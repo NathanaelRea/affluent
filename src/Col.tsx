@@ -30,7 +30,6 @@ import {
   CITIES,
   states,
 } from "./data";
-import { Pie, PieChart } from "recharts";
 import { FIELD } from "./components/FIELD";
 import { expensesSchema } from "./components/tables/expenses/columns";
 import { DataTable } from "./components/tables/basic-table";
@@ -158,20 +157,16 @@ function Inner({
   const maxRoth = rothIRALimit(form.getValues());
 
   return (
-    <div className="flex flex-col justify-center items-center p-4">
+    <div className="flex flex-col justify-center items-center p-4 h-full">
       <main className="flex flex-col max-w-4xl w-full">
         <h1 className="text-2xl">Cost of living in depth</h1>
-        <h2 className="text-gray-400">
-          Compare cost of living with in depth analysis. Using fed/state/city
-          taxes, category based cost of living adjustments, and more!
+        <h2 className="text-gray-400 px-4">
+          Compare cost of living with in depth analysis. Using
+          (federal/state/city) taxes, category based cost of living adjustments,
+          and more!
         </h2>
-        <div>
-          <Button variant="outline" onClick={resetDefaults}>
-            Clear
-          </Button>
-        </div>
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)}>
+          <form onSubmit={form.handleSubmit(onSubmit)} className="py-8">
             <FormLabel>Filing Status</FormLabel>
             <div>
               <Combobox
@@ -316,9 +311,14 @@ function Inner({
             >
               <PlusIcon />
             </Button>
-            <Button type="submit" onClick={form.handleSubmit(onSubmit)}>
-              Submit
-            </Button>
+            <div className="flex items-center justify-between">
+              <Button variant="outline" onClick={resetDefaults}>
+                Reset
+              </Button>
+              <Button type="submit" onClick={form.handleSubmit(onSubmit)}>
+                Submit
+              </Button>
+            </div>
           </form>
         </Form>
         {data && <Results data={data} />}
@@ -400,15 +400,8 @@ function Results({ data }: { data: MyForm }) {
       <Label>Required Income</Label>
       <h2 className="text-2xl">{formatMoney(convertedData.salary)}</h2>
       <h2 className="text-xl">Overview</h2>
-      <div className="grid grid-cols-1 md:grid-cols-3 p-4">
-        <div className="col-span-2">
-          <OverviewChart localData={data} remoteData={convertedData} />
-          <ExpensesChart localData={data} remoteData={convertedData} />
-        </div>
-        <div className="flex items-center justify-center">
-          <MyPieChart localData={data} remoteData={convertedData} />
-        </div>
-      </div>
+      <OverviewChart localData={data} remoteData={convertedData} />
+      <ExpensesChart localData={data} remoteData={convertedData} />
     </div>
   );
 }
@@ -483,7 +476,7 @@ function ExpensesChart({
   return (
     <ChartContainer
       config={barChartConfig(localData.city, remoteData.city)}
-      className="h-[200px]"
+      className="w-full h-[200px]"
     >
       <BarChart accessibilityLayer data={chartData}>
         <CartesianGrid vertical={false} />
@@ -570,7 +563,7 @@ function OverviewChart({
   return (
     <ChartContainer
       config={barChartConfig(localData.city, remoteData.city)}
-      className="h-[200px]"
+      className="w-full h-[200px]"
     >
       <BarChart accessibilityLayer data={chartData}>
         <CartesianGrid vertical={false} />
@@ -599,101 +592,6 @@ function OverviewChart({
       </BarChart>
     </ChartContainer>
   );
-}
-
-function MyPieChart({
-  localData,
-  remoteData,
-}: {
-  localData: MyForm;
-  remoteData: MyForm;
-}) {
-  const localDataPie = createPieData(localData, "local");
-  const remoteDataPie = createPieData(remoteData, "remote");
-
-  const chartConfig = {
-    local: {
-      label: localData.city,
-    },
-    remote: {
-      label: remoteData.city,
-    },
-  } satisfies ChartConfig;
-
-  return (
-    <ChartContainer config={chartConfig} className="aspect-square h-[350px]">
-      <PieChart>
-        <ChartTooltip
-          content={
-            <ChartTooltipContent
-              labelKey="visitors"
-              nameKey="month"
-              indicator="line"
-              valueFormatter={(v) => formatMoney(Number(v))}
-              labelFormatter={(_, payload) => {
-                return chartConfig[
-                  payload?.[0].dataKey as keyof typeof chartConfig
-                ].label;
-              }}
-            />
-          }
-        />
-        <Pie
-          data={localDataPie}
-          dataKey="local"
-          innerRadius={50}
-          outerRadius={90}
-          paddingAngle={2}
-        />
-        <Pie
-          data={remoteDataPie}
-          dataKey="remote"
-          innerRadius={100}
-          outerRadius={150}
-          paddingAngle={2}
-        />
-      </PieChart>
-    </ChartContainer>
-  );
-}
-
-function createPieData(data: MyForm, key: "local" | "remote") {
-  const parsedData = calculateNetTakeHomePay(data);
-  const taxes = parsedData.fedTax + parsedData.stateTax + parsedData.cityTax;
-  const socialSecurity = parsedData.socialSecurity + parsedData.medicare;
-  const expenses = parsedData.expenses;
-  const investments =
-    parsedData.rothIRAContribution + parsedData.afterTaxInvestments;
-  const netTakeHome = parsedData.netTakeHome;
-
-  // https://coolors.co/74b3ce-508991-172a3a-004346-09bc8a
-  return [
-    {
-      name: "Tax",
-      [key]: taxes / 12,
-      fill: key === "local" ? "#E5E9EA" : "#84B3CE",
-    },
-    {
-      name: "Social Security / Medicare",
-      [key]: socialSecurity / 12,
-      fill: key === "local" ? "#D9DDDE" : "#508991",
-    },
-    {
-      name: "Expenses",
-      [key]: expenses / 12,
-      fill: key === "local" ? "#C4CACF" : "#172A3A",
-    },
-    {
-      name: "Investments",
-      [key]: investments / 12,
-      fill: key === "local" ? "#BAD5D6" : "#004346",
-    },
-    {
-      name: "Net Take Home",
-      [key]: netTakeHome / 12,
-      fill: key === "local" ? "#CFE1DC" : "#09BC8A",
-    },
-  ];
 }
 
 function convertCostOfLiving(

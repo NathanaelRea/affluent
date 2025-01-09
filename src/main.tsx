@@ -6,7 +6,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "sonner";
 import { BrowserRouter, Route, Routes } from "react-router";
 import COL from "./Col.tsx";
-import Nav from "./Nav.tsx";
+import Layout from "./Nav.tsx";
 import Monte from "./Monte.tsx";
 
 const queryClient = new QueryClient();
@@ -17,7 +17,7 @@ createRoot(document.getElementById("root")!).render(
       <QueryClientProvider client={queryClient}>
         <BrowserRouter>
           <Routes>
-            <Route element={<Nav />}>
+            <Route element={<Layout />}>
               <Route path="/" element={<COL />} />
               <Route path="/col" element={<COL />} />
               <Route path="/monte" element={<Monte />} />
