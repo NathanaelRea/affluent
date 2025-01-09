@@ -168,15 +168,20 @@ function Chart({ parsedData }: { parsedData: ParsedData }) {
 
   const chartConfig = {
     value: {
-      label: "Average Value",
+      label: "Average",
     },
     median: {
-      label: "Median Value",
+      label: "Median",
+    },
+    tenth: {
+      label: "Tenth Percentile",
     },
     year: {
       label: "Year",
     },
   } satisfies ChartConfig;
+
+  const extraLines = ["average", "median", "tenth"];
 
   const animationEnabled = simCount <= 100;
   const lastYearData = chartData[chartData.length - 1];
@@ -203,6 +208,7 @@ function Chart({ parsedData }: { parsedData: ParsedData }) {
       </div>
       <ChartContainer config={chartConfig} ref={chartRef}>
         <LineChart
+          className="w-full p-2"
           accessibilityLayer
           data={chartData}
           margin={{
@@ -257,6 +263,13 @@ function Chart({ parsedData }: { parsedData: ParsedData }) {
             strokeWidth={2}
             dot={false}
           />
+          <Line
+            isAnimationActive={animationEnabled}
+            dataKey={"tenth"}
+            stroke="#00AAAA"
+            strokeWidth={2}
+            dot={false}
+          />
         </LineChart>
       </ChartContainer>
     </>
@@ -267,7 +280,8 @@ async function generateChartData(data: MyForm) {
   const results = monteCarloDrawdown(data);
 
   const chartData = [] as Simulation[];
-  for (let year = 0; year < data.years; year++) {
+  // Include last because 0th is initial
+  for (let year = 0; year <= data.years; year++) {
     const yearData = results.reduce(
       (acc, result, idx) => {
         return {
@@ -319,7 +333,8 @@ function monteCarloDrawdown(data: MyForm) {
     let balance = data.initialInvestment;
     const yearlyBalances: number[] = [balance];
 
-    for (let year = 0; year < data.years; year++) {
+    // Include last because 0th is initial
+    for (let year = 0; year <= data.years; year++) {
       balance -= withdrawAmount;
       if (balance < 0) {
         break;

@@ -314,7 +314,7 @@ function Inner({
 
             <div className="flex items-center justify-between">
               <Button variant="outline" onClick={resetDefaults}>
-                Clear
+                Reset
               </Button>
               <Button type="submit" onClick={form.handleSubmit(onSubmit)}>
                 Submit
