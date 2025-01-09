@@ -406,7 +406,38 @@ export const CITY_TAX: Record<City, Tax> = {
     },
   },
   Denver: { type: "flat", rate: 5.75 * 12 },
-  "New York City": undefined,
+  "New York City": {
+    type: "status-based",
+    status: {
+      Single: {
+        type: "bracket",
+        brackets: {
+          12_000: 0.0378,
+          25_000: 0.03762,
+          50_000: 0.03819,
+          Infinity: 0.03876,
+        },
+      },
+      Married: {
+        type: "bracket",
+        brackets: {
+          21_600: 0.0378,
+          45_000: 0.03762,
+          90_000: 0.03819,
+          Infinity: 0.03876,
+        },
+      },
+      "Head of Household": {
+        type: "bracket",
+        brackets: {
+          21_600: 0.0378,
+          45_000: 0.03762,
+          90_000: 0.03819,
+          Infinity: 0.03876,
+        },
+      },
+    },
+  },
   "San Francisco": undefined,
   "Los Angeles": undefined,
   Chicago: undefined,
