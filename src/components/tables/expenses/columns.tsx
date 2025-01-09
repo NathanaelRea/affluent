@@ -4,7 +4,7 @@ import { BasicActions } from "../basic-table";
 import { categories, categoryScheama } from "@/data";
 import { Combobox } from "@/components/combobox";
 import { Input } from "@/components/ui/input";
-import { formatMoney } from "@/lib/utils";
+import { InputWithFormat } from "@/components/InputWithFormat";
 
 export const expensesSchema = z.object({
   name: z.string(),
@@ -57,14 +57,13 @@ export const expenseColumns: ColumnDef<Expenses>[] = [
     cell: ({ row, table }) => {
       const meta = table.options.meta;
       return (
-        <Input
-          value={formatMoney(Number(row.original.amount))}
+        <InputWithFormat
+          value={row.original.amount}
           onChange={(e) => {
-            meta?.setValue?.(
-              `expenses.${row.index}.amount`,
-              e.target.value.replace("$", ""),
-            );
+            meta?.setValue?.(`expenses.${row.index}.amount`, e.toString());
           }}
+          onBlur={() => {}}
+          type="money"
         />
       );
     },
