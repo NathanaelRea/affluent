@@ -1,14 +1,14 @@
 import { ColumnDef } from "@tanstack/react-table";
 import { z } from "zod";
 import { BasicActions } from "../basic-table";
-import { categories } from "@/data";
+import { categories, categoryScheama } from "@/data";
 import { Combobox } from "@/components/combobox";
 import { Input } from "@/components/ui/input";
 import { formatMoney } from "@/lib/utils";
 
 export const expensesSchema = z.object({
   name: z.string(),
-  categoryId: z.string(),
+  category: categoryScheama,
   amount: z.coerce.number(),
 });
 export type Expenses = z.infer<typeof expensesSchema>;
@@ -30,7 +30,7 @@ export const expenseColumns: ColumnDef<Expenses>[] = [
     },
   },
   {
-    accessorKey: "categoryId",
+    accessorKey: "category",
     header: "Category",
     cell: ({ row, table }) => {
       const meta = table.options.meta;
@@ -39,13 +39,13 @@ export const expenseColumns: ColumnDef<Expenses>[] = [
           name="category"
           items={categories.map((c) => {
             return {
-              label: c.name,
-              value: c.id,
+              label: c,
+              value: c,
             };
           })}
-          value={row.original.categoryId}
+          value={row.original.category}
           setValue={(v) => {
-            meta?.setValue?.(`expenses.${row.index}.categoryId`, v);
+            meta?.setValue?.(`expenses.${row.index}.category`, v);
           }}
         />
       );
