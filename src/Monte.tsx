@@ -77,7 +77,7 @@ export default function Monte() {
   const portfolio = form.watch("portfolio");
 
   return (
-    <div className="flex flex-col justify-center items-center p-4">
+    <div className="flex flex-col justify-center items-center p-4 h-full">
       <main className="flex flex-col max-w-4xl w-full">
         <h1 className="text-2xl">Safe withdraw rate Monte Carlo</h1>
         <h2 className="text-gray-400">
@@ -85,7 +85,7 @@ export default function Monte() {
           portfolio using a constant withdraw rate.
         </h2>
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)}>
+          <form onSubmit={form.handleSubmit(onSubmit)} className="py-8">
             <FIELD form={form} formKey="years" label="Years" />
             <InputWithFormatRHF
               form={form}
@@ -144,7 +144,7 @@ export default function Monte() {
             >
               <PlusIcon className="h-2" />
             </Button>
-            <div>
+            <div className="flex justify-end">
               <Button type="submit" disabled={isPending}>
                 Simulate
               </Button>

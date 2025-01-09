@@ -158,20 +158,16 @@ function Inner({
   const maxRoth = rothIRALimit(form.getValues());
 
   return (
-    <div className="flex flex-col justify-center items-center p-4">
+    <div className="flex flex-col justify-center items-center p-4 h-full">
       <main className="flex flex-col max-w-4xl w-full">
         <h1 className="text-2xl">Cost of living in depth</h1>
-        <h2 className="text-gray-400">
-          Compare cost of living with in depth analysis. Using fed/state/city
-          taxes, category based cost of living adjustments, and more!
+        <h2 className="text-gray-400 px-4">
+          Compare cost of living with in depth analysis. Using
+          (federal/state/city) taxes, category based cost of living adjustments,
+          and more!
         </h2>
-        <div>
-          <Button variant="outline" onClick={resetDefaults}>
-            Clear
-          </Button>
-        </div>
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)}>
+          <form onSubmit={form.handleSubmit(onSubmit)} className="py-8">
             <FormLabel>Filing Status</FormLabel>
             <div>
               <Combobox
@@ -316,9 +312,15 @@ function Inner({
             >
               <PlusIcon />
             </Button>
-            <Button type="submit" onClick={form.handleSubmit(onSubmit)}>
-              Submit
-            </Button>
+
+            <div className="flex items-center justify-between">
+              <Button variant="outline" onClick={resetDefaults}>
+                Clear
+              </Button>
+              <Button type="submit" onClick={form.handleSubmit(onSubmit)}>
+                Submit
+              </Button>
+            </div>
           </form>
         </Form>
         {data && <Results data={data} />}
