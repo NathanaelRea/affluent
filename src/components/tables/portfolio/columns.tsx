@@ -1,13 +1,13 @@
-import { formatPercent } from "@/lib/utils";
+import { percentFormatter } from "@/lib/utils";
 import { ColumnDef } from "@tanstack/react-table";
 import { z } from "zod";
 import { BasicActions } from "../basic-table";
 
 export const fundSchema = z.object({
   name: z.string(),
-  mean: z.number(),
-  std: z.number(),
-  weight: z.number(),
+  mean: z.number().min(0).max(1, "Maximum of 100%"),
+  std: z.number().min(0).max(1, "Maximum of 100%"),
+  weight: z.number().min(0).max(1, "Maximum of 100%"),
 });
 export type Fund = z.infer<typeof fundSchema>;
 
@@ -19,17 +19,17 @@ export const fundColumns: ColumnDef<Fund>[] = [
   {
     accessorKey: "mean",
     header: "Mean",
-    cell: ({ row }) => formatPercent(row.original.mean),
+    cell: ({ row }) => percentFormatter.format(row.original.mean),
   },
   {
     accessorKey: "std",
     header: "Std. Dev",
-    cell: ({ row }) => formatPercent(row.original.std),
+    cell: ({ row }) => percentFormatter.format(row.original.std),
   },
   {
     accessorKey: "weight",
     header: "Allocation",
-    cell: ({ row }) => formatPercent(row.original.weight),
+    cell: ({ row }) => percentFormatter.format(row.original.weight),
   },
   {
     id: "actions",

@@ -5,12 +5,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { useEffect, useRef, useState } from "react";
 import { Label } from "./components/ui/label";
-import {
-  formatMoney,
-  moneyFormatter,
-  percentFormatter,
-  secantMethod,
-} from "./lib/utils";
+import { formatMoney, secantMethod } from "./lib/utils";
 import { Combobox } from "./components/combobox";
 import {
   ChartConfig,
@@ -41,6 +36,7 @@ import { expensesSchema } from "./components/tables/expenses/columns";
 import { DataTable } from "./components/tables/basic-table";
 import { expenseColumns } from "./components/tables/expenses/columns";
 import { FED_TAX, CITY_TAX, STATE_TAX, COST_OF_LIVING } from "./data2024";
+import { InputWithFormatRHF } from "./components/InputWithFormat";
 
 const formSchema = z
   .object({
@@ -48,7 +44,7 @@ const formSchema = z
     status: taxStatusSchema,
     age: z.coerce.number(),
     salary: z.coerce.number(),
-    fourOhOneK: z.coerce.number().min(0).max(1),
+    fourOhOneK: z.coerce.number().min(0).max(1, "Maximum of 100%"),
     hsaContribution: z.coerce.number(),
     rothIRAContribution: z.coerce.number(),
     afterTaxInvestments: z.coerce.number(),
@@ -204,19 +200,19 @@ function Inner({
             </div>
             <FIELD form={form} formKey="age" label="Age" />
             <h2 className="text-xl">Income</h2>
-            <FIELD
+            <InputWithFormatRHF
               form={form}
               formKey="salary"
               label="Salary"
-              format={moneyFormatter}
+              type="money"
             />
-            <FIELD
+            <InputWithFormatRHF
               form={form}
               formKey="fourOhOneK"
               label="401(k)"
-              format={percentFormatter}
+              type="percentage"
             />
-            <FIELD
+            <InputWithFormatRHF
               form={form}
               formKey="hsaContribution"
               label={
@@ -242,9 +238,9 @@ function Inner({
                   </Button>
                 </div>
               }
-              format={moneyFormatter}
+              type="money"
             />
-            <FIELD
+            <InputWithFormatRHF
               form={form}
               formKey="rothIRAContribution"
               label={
@@ -271,13 +267,13 @@ function Inner({
                   </Button>
                 </div>
               }
-              format={moneyFormatter}
+              type="money"
             />
-            <FIELD
+            <InputWithFormatRHF
               form={form}
               formKey="afterTaxInvestments"
               label="After tax investments"
-              format={moneyFormatter}
+              type="money"
             />
             <h2 className="text-xl">Expenses</h2>
             <DataTable

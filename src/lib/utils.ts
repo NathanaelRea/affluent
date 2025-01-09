@@ -5,16 +5,21 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
-export function formatMoney(amount: number): string {
-  return amount.toLocaleString("en-US", {
-    style: "currency",
-    currency: "USD",
-    maximumFractionDigits: 0,
-  });
-}
+export const moneyFormatter = new Intl.NumberFormat("en-US", {
+  style: "currency",
+  currency: "USD",
+  minimumFractionDigits: 0,
+  maximumFractionDigits: 0,
+});
 
-export function formatPercent(amount: number): string {
-  return `${(amount * 100).toFixed(2)}%`;
+export const percentFormatter = new Intl.NumberFormat("en-US", {
+  style: "percent",
+  minimumFractionDigits: 2,
+  maximumFractionDigits: 2,
+});
+
+export function formatMoney(value: number): string {
+  return moneyFormatter.format(value);
 }
 
 export function secantMethod(
@@ -35,13 +40,3 @@ export function secantMethod(
   }
   return x2;
 }
-
-export const moneyFormatter = {
-  formatValue: formatMoney,
-  formatInput: (value: string) => Number(value.replace(/[^0-9.]/g, "")),
-};
-
-export const percentFormatter = {
-  formatValue: formatPercent,
-  formatInput: (value: string) => Number(value.replace(/[^0-9.]/g, "")) / 100,
-};
