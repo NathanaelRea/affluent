@@ -4,7 +4,7 @@ import { BasicActions } from "../basic-table";
 import { categories, categoryScheama } from "@/data";
 import { Combobox } from "@/components/combobox";
 import { Input } from "@/components/ui/input";
-import { InputWithFormat } from "@/components/InputWithFormat";
+import { InputWithFormat } from "@/components/InputRHF";
 
 export const expensesSchema = z.object({
   name: z.string(),

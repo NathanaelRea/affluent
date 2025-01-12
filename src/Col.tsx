@@ -30,12 +30,12 @@ import {
   CITIES,
   states,
 } from "./data";
-import { FIELD } from "./components/FIELD";
 import { expensesSchema } from "./components/tables/expenses/columns";
 import { DataTable } from "./components/tables/basic-table";
 import { expenseColumns } from "./components/tables/expenses/columns";
 import { FED_TAX, CITY_TAX, STATE_TAX, COST_OF_LIVING } from "./data2024";
-import { InputWithFormatRHF } from "./components/InputWithFormat";
+import { InputRHF } from "./components/InputRHF";
+import { ComboboxRHF } from "./components/ComboboxRHF";
 
 const formSchema = z
   .object({
@@ -168,46 +168,38 @@ function Inner({
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="py-8">
             <FormLabel>Filing Status</FormLabel>
-            <div>
-              <Combobox
-                disabled
-                name="status"
-                items={TAX_STATUS.map((status) => ({
-                  value: status,
-                  label: status,
-                }))}
-                value="Single"
-                setValue={() => {}}
-              />
-            </div>
+            <ComboboxRHF
+              form={form}
+              formKey="status"
+              items={TAX_STATUS.map((status) => ({
+                value: status,
+                label: status,
+              }))}
+            />
             <FormLabel>City</FormLabel>
-            <div>
-              <Combobox
-                disabled
-                name="city"
-                items={CITIES.map((c) => ({
-                  label: `${c}, ${states[cities[c].state].abbreviation}`,
-                  value: c,
-                }))}
-                value={"Philadelphia"}
-                setValue={() => {}}
-              />
-            </div>
-            <FIELD form={form} formKey="age" label="Age" />
+            <ComboboxRHF
+              form={form}
+              formKey="city"
+              items={CITIES.map((c) => ({
+                label: `${c}, ${states[cities[c].state].abbreviation}`,
+                value: c,
+              }))}
+            />
+            <InputRHF form={form} formKey="age" label="Age" />
             <h2 className="text-xl">Income</h2>
-            <InputWithFormatRHF
+            <InputRHF
               form={form}
               formKey="salary"
               label="Salary"
               type="money"
             />
-            <InputWithFormatRHF
+            <InputRHF
               form={form}
               formKey="fourOhOneK"
               label="401(k)"
               type="percentage"
             />
-            <InputWithFormatRHF
+            <InputRHF
               form={form}
               formKey="hsaContribution"
               label={
@@ -235,7 +227,7 @@ function Inner({
               }
               type="money"
             />
-            <InputWithFormatRHF
+            <InputRHF
               form={form}
               formKey="rothIRAContribution"
               label={
@@ -264,13 +256,13 @@ function Inner({
               }
               type="money"
             />
-            <InputWithFormatRHF
+            <InputRHF
               form={form}
               formKey="afterTaxInvestments"
               label="After tax investments"
               type="money"
             />
-            <h2 className="text-xl">Expenses</h2>
+            <h2 className="text-xl" />
             <DataTable
               data={form.watch("expenses")}
               columns={expenseColumns}

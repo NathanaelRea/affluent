@@ -11,7 +11,6 @@ import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { Form, FormLabel } from "./components/ui/form";
-import { FIELD } from "./components/FIELD";
 import { Button } from "./components/ui/button";
 import { PlusIcon } from "lucide-react";
 import { DataTable } from "./components/tables/basic-table";
@@ -20,7 +19,7 @@ import {
   fundColumns,
   fundSchema,
 } from "./components/tables/portfolio/columns";
-import { InputWithFormatRHF } from "./components/InputWithFormat";
+import { InputRHF } from "./components/InputRHF";
 
 type Simulation = {
   year: number;
@@ -86,26 +85,26 @@ export default function Monte() {
         </h2>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="py-8">
-            <FIELD form={form} formKey="years" label="Years" />
-            <InputWithFormatRHF
+            <InputRHF form={form} formKey="years" label="Years" />
+            <InputRHF
               form={form}
               formKey="initialInvestment"
               label="Initial Investment"
               type="money"
             />
-            <InputWithFormatRHF
+            <InputRHF
               form={form}
               formKey="withdrawRate"
               label="Withdraw Rate"
               type="percentage"
             />
-            <InputWithFormatRHF
+            <InputRHF
               form={form}
               formKey="inflation"
               label="Inflation"
               type="percentage"
             />
-            <FIELD
+            <InputRHF
               form={form}
               formKey="simCount"
               label="Number of Simulations"
