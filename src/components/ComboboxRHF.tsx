@@ -30,7 +30,9 @@ export function ComboboxRHF<T extends FieldValues>({
         <FormItem>
           {label && <FormLabel>{label}</FormLabel>}
           <FormControl>
-            <Combobox {...field} setValue={field.onChange} items={items} />
+            <div>
+              <Combobox {...field} setValue={field.onChange} items={items} />
+            </div>
           </FormControl>
           <FormMessage />
         </FormItem>

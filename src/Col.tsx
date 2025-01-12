@@ -16,7 +16,7 @@ import {
   ChartTooltipContent,
 } from "./components/ui/chart";
 import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from "recharts";
-import { ChevronsUp, Minus, PlusIcon } from "lucide-react";
+import { PlusIcon } from "lucide-react";
 import { toast } from "sonner";
 import {
   cities,
@@ -70,6 +70,21 @@ const formSchema = z
         argumentsError: new z.ZodError([]),
       });
     }
+
+    const agi = rothLimit.modifiedAGI;
+    const totalExpenses = data.expenses.reduce(
+      (acc, val) => acc + val.amount * 12,
+      0,
+    );
+    if (agi - data.rothIRAContribution - totalExpenses < 0) {
+      ctx.addIssue({
+        message: `Expenses and investments cannot exceed modified gross income (${formatMoney(agi)}).`,
+        path: ["expenses"],
+        code: "invalid_arguments",
+        fatal: true,
+        argumentsError: new z.ZodError([]),
+      });
+    }
   });
 
 function calculateModifiedAGI(data: MyForm) {
@@ -78,7 +93,6 @@ function calculateModifiedAGI(data: MyForm) {
     data.salary - standardDeduction - data.hsaContribution - data.fourOhOneK
   );
 }
-
 function rothIRALimit(data: MyForm) {
   const modifiedAGI = calculateModifiedAGI(data);
   const { range, limit, limit50 } = FED_TAX.rothIRAMaxContribution;
@@ -158,162 +172,171 @@ function Inner({
 
   return (
     <div className="flex flex-col justify-center items-center p-4 h-full">
-      <main className="flex flex-col max-w-4xl w-full">
+      <main className="flex flex-col max-w-2xl w-full">
         <h1 className="text-2xl">Cost of living in depth</h1>
-        <h2 className="text-gray-400 px-4">
+        <h2 className="text-gray-400 text-pretty">
           Compare cost of living with in depth analysis. Using
           (federal/state/city) taxes, category based cost of living adjustments,
           and more!
         </h2>
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="py-8">
-            <FormLabel>Filing Status</FormLabel>
-            <ComboboxRHF
-              form={form}
-              formKey="status"
-              items={TAX_STATUS.map((status) => ({
-                value: status,
-                label: status,
-              }))}
-            />
-            <FormLabel>City</FormLabel>
-            <ComboboxRHF
-              form={form}
-              formKey="city"
-              items={CITIES.map((c) => ({
-                label: `${c}, ${states[cities[c].state].abbreviation}`,
-                value: c,
-              }))}
-            />
-            <InputRHF form={form} formKey="age" label="Age" />
-            <h2 className="text-xl">Income</h2>
-            <InputRHF
-              form={form}
-              formKey="salary"
-              label="Salary"
-              type="money"
-            />
-            <InputRHF
-              form={form}
-              formKey="fourOhOneK"
-              label="401(k)"
-              type="percentage"
-            />
-            <InputRHF
-              form={form}
-              formKey="hsaContribution"
-              label={
-                <div className="flex gap-2 items-center">
-                  HSA
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    title="Set to max"
-                    onClick={() =>
+        <div className="flex justify-center">
+          <div className="w-full max-w-xl">
+            <Form {...form}>
+              <form
+                onSubmit={form.handleSubmit(onSubmit)}
+                className="grid grid-cols-2 gap-4 py-8"
+              >
+                <ComboboxRHF
+                  form={form}
+                  formKey="status"
+                  label="Filing Status"
+                  items={TAX_STATUS.map((status) => ({
+                    value: status,
+                    label: status,
+                  }))}
+                />
+                <ComboboxRHF
+                  form={form}
+                  formKey="city"
+                  label="City"
+                  items={CITIES.map((c) => ({
+                    label: `${c}, ${states[cities[c].state].abbreviation}`,
+                    value: c,
+                  }))}
+                />
+                <InputRHF form={form} formKey="age" label="Age" />
+                <InputRHF
+                  form={form}
+                  formKey="salary"
+                  label="Salary"
+                  type="money"
+                />
+                <InputRHF
+                  form={form}
+                  formKey="fourOhOneK"
+                  label="401(k)"
+                  type="percentage"
+                />
+                <InputRHF
+                  form={form}
+                  formKey="hsaContribution"
+                  label={
+                    <>
+                      HSA
+                      <Button
+                        className="text-xs py-0 p-0 px-2"
+                        type="button"
+                        variant="ghost"
+                        size={null}
+                        title="Set to max"
+                        disabled={maxHsa == form.watch("hsaContribution")}
+                        onClick={() =>
+                          form.setValue(
+                            "hsaContribution",
+                            hsaLimit(form.getValues()),
+                          )
+                        }
+                      >
+                        Max
+                      </Button>
+                    </>
+                  }
+                  type="money"
+                />
+                <InputRHF
+                  form={form}
+                  formKey="rothIRAContribution"
+                  label={
+                    <>
+                      Roth IRA
+                      <Button
+                        className="text-xs py-0 p-0 px-2"
+                        type="button"
+                        variant="ghost"
+                        size={null}
+                        title="Set to max"
+                        disabled={
+                          maxRoth.maxRoth == form.watch("rothIRAContribution")
+                        }
+                        onClick={() =>
+                          form.setValue(
+                            "rothIRAContribution",
+                            rothIRALimit(form.getValues()).maxRoth,
+                          )
+                        }
+                      >
+                        Max
+                      </Button>
+                    </>
+                  }
+                  type="money"
+                />
+                <InputRHF
+                  form={form}
+                  formKey="afterTaxInvestments"
+                  label="After tax investments"
+                  type="money"
+                />
+                <div className="col-span-2">
+                  <DataTable
+                    data={form.watch("expenses")}
+                    columns={expenseColumns}
+                    setValue={(name, value) => {
+                      // this is kinda dumb
                       form.setValue(
-                        "hsaContribution",
-                        hsaLimit(form.getValues()),
-                      )
-                    }
-                  >
-                    {maxHsa == form.getValues("hsaContribution") ? (
-                      <Minus />
-                    ) : (
-                      <ChevronsUp />
-                    )}
-                  </Button>
-                </div>
-              }
-              type="money"
-            />
-            <InputRHF
-              form={form}
-              formKey="rothIRAContribution"
-              label={
-                <div className="flex gap-2 items-center">
-                  Roth IRA
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    title="Set to max"
-                    onClick={() =>
+                        name as
+                          | `expenses.${number}.category`
+                          | `expenses.${number}.amount`
+                          | `expenses.${number}.name`,
+                        value,
+                      );
+                    }}
+                    deleteRow={(rowIndex: number) => {
+                      const expenses = form.getValues("expenses");
                       form.setValue(
-                        "rothIRAContribution",
-                        rothIRALimit(form.getValues()).maxRoth,
-                      )
-                    }
+                        "expenses",
+                        expenses.filter((_, i) => i != rowIndex),
+                      );
+                    }}
+                  />
+                  <Button
+                    size={"sm"}
+                    variant={"outline"}
+                    type="button"
+                    className="w-full"
+                    onClick={() => {
+                      const expenses = form.getValues("expenses");
+                      form.setValue("expenses", [
+                        ...expenses,
+                        {
+                          name: `Expense ${expenses.length + 1}`,
+                          amount: 100,
+                          category: "Miscellaneous",
+                        },
+                      ]);
+                    }}
                   >
-                    {maxRoth.maxRoth ==
-                    form.getValues("rothIRAContribution") ? (
-                      <Minus />
-                    ) : (
-                      <ChevronsUp />
-                    )}
+                    <PlusIcon />
                   </Button>
+                  {form.formState.errors?.expenses && (
+                    <p className="text-[0.8rem] font-medium text-destructive">
+                      {form.formState.errors?.expenses?.message}
+                    </p>
+                  )}
+                  <div className="flex items-center justify-between">
+                    <Button variant="outline" onClick={resetDefaults}>
+                      Reset
+                    </Button>
+                    <Button type="submit" onClick={form.handleSubmit(onSubmit)}>
+                      Submit
+                    </Button>
+                  </div>
                 </div>
-              }
-              type="money"
-            />
-            <InputRHF
-              form={form}
-              formKey="afterTaxInvestments"
-              label="After tax investments"
-              type="money"
-            />
-            <h2 className="text-xl" />
-            <DataTable
-              data={form.watch("expenses")}
-              columns={expenseColumns}
-              setValue={(name, value) => {
-                // this is kinda dumb
-                form.setValue(
-                  name as
-                    | `expenses.${number}.category`
-                    | `expenses.${number}.amount`
-                    | `expenses.${number}.name`,
-                  value,
-                );
-              }}
-              deleteRow={(rowIndex: number) => {
-                const expenses = form.getValues("expenses");
-                form.setValue(
-                  "expenses",
-                  expenses.filter((_, i) => i != rowIndex),
-                );
-              }}
-            />
-            <Button
-              size={"sm"}
-              variant={"outline"}
-              type="button"
-              className="w-full"
-              onClick={() => {
-                const expenses = form.getValues("expenses");
-                form.setValue("expenses", [
-                  ...expenses,
-                  {
-                    name: `Expense ${expenses.length + 1}`,
-                    amount: 100,
-                    category: "Miscellaneous",
-                  },
-                ]);
-              }}
-            >
-              <PlusIcon />
-            </Button>
-            <div className="flex items-center justify-between">
-              <Button variant="outline" onClick={resetDefaults}>
-                Reset
-              </Button>
-              <Button type="submit" onClick={form.handleSubmit(onSubmit)}>
-                Submit
-              </Button>
-            </div>
-          </form>
-        </Form>
-        {data && <Results data={data} />}
+              </form>
+            </Form>
+            {data && <Results data={data} />}
+          </div>
+        </div>
       </main>
     </div>
   );
