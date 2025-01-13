@@ -35,6 +35,7 @@ import { expenseColumns } from "./components/tables/expenses/columns";
 import { FED_TAX, CITY_TAX, STATE_TAX, COST_OF_LIVING } from "./data2024";
 import { InputRHF } from "./components/InputRHF";
 import { ComboboxRHF } from "./components/ComboboxRHF";
+import { SelectRHF } from "./components/SelectRHF";
 
 const formSchema = z
   .object({
@@ -205,7 +206,7 @@ function Inner({
               value: c,
             }))}
           />
-          <ComboboxRHF
+          <SelectRHF
             form={form}
             formKey="age"
             label={

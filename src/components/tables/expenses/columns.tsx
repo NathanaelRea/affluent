@@ -1,11 +1,34 @@
+import { ReactNode } from "react";
 import { ColumnDef } from "@tanstack/react-table";
 import { z } from "zod";
-import { categories, categoryScheama } from "@/data";
-import { Combobox } from "@/components/combobox";
+import { categories, Category, categoryScheama } from "@/data";
 import { Input } from "@/components/ui/input";
 import { InputWithFormat } from "@/components/InputRHF";
-import { Trash2Icon } from "lucide-react";
+import {
+  Ambulance,
+  Box,
+  Car,
+  House,
+  ShoppingBasket,
+  Trash2Icon,
+  UtilityPole,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
+import {
+  Select,
+  SelectContent,
+  SelectTrigger,
+  SelectItem,
+} from "../../ui/select.tsx";
+
+const categoryIcons: Record<Category, ReactNode> = {
+  Healthcare: <Ambulance className="h-4" />,
+  Housing: <House className="h-4" />,
+  Transportation: <Car className="h-4" />,
+  Grocery: <ShoppingBasket className="h-4" />,
+  Utilities: <UtilityPole className="h-4" />,
+  Miscellaneous: <Box className="h-4" />,
+};
 
 export const expensesSchema = z.object({
   name: z.string(),
@@ -36,19 +59,28 @@ export const expenseColumns: ColumnDef<Expenses>[] = [
     cell: ({ row, table }) => {
       const meta = table.options.meta;
       return (
-        <Combobox
-          name="category"
-          items={categories.map((c) => {
-            return {
-              label: c,
-              value: c,
-            };
-          })}
+        <Select
           value={row.original.category}
-          setValue={(v) => {
+          onValueChange={(v) => {
             meta?.setValue?.(`expenses.${row.index}.category`, v);
           }}
-        />
+        >
+          <SelectTrigger className="text-xs md:text-base">
+            <div>
+              <span className="md:hidden">
+                {categoryIcons[row.original.category]}
+              </span>
+              <span className="hidden md:inline">{row.original.category}</span>
+            </div>
+          </SelectTrigger>
+          <SelectContent>
+            {categories.map((c) => (
+              <SelectItem value={c} key={c}>
+                {c}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       );
     },
   },
