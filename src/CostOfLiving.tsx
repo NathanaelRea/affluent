@@ -336,7 +336,7 @@ function Inner({
             </p>
           )}
           <div className="flex items-center justify-between col-span-2">
-            <Button variant="outline" onClick={resetDefaults}>
+            <Button variant="outline" onClick={resetDefaults} type="button">
               Reset
             </Button>
             <Button type="submit" onClick={form.handleSubmit(onSubmit)}>
