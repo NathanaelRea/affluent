@@ -406,20 +406,22 @@ function Results({ data }: { data: MyForm }) {
 
   return (
     <div className="flex flex-col gap-2" ref={resultsRef}>
-      <div className="flex justify-between">
-        <div className="flex gap-2 items-end">
-          <h2 className="text-2xl">{formatMoney(convertedData.salary)}</h2>
+      <div className="flex justify-between items-end">
+        <div className="flex flex-col gap-2 items-end text-nowrap">
           <span className="text-sm text-muted-foreground">Required Income</span>
+          <h2 className="text-2xl">{formatMoney(convertedData.salary)}</h2>
         </div>
-        <Combobox
-          name="city"
-          items={CITIES.map((c) => ({
-            label: `${c}, ${states[cities[c].state].abbreviation}`,
-            value: c,
-          }))}
-          value={remoteCity}
-          setValue={(c) => setRemoteCity(c as City)}
-        />
+        <div>
+          <Combobox
+            name="city"
+            items={CITIES.map((c) => ({
+              label: `${c}, ${states[cities[c].state].abbreviation}`,
+              value: c,
+            }))}
+            value={remoteCity}
+            setValue={(c) => setRemoteCity(c as City)}
+          />
+        </div>
       </div>
       <OverviewChart localData={data} remoteData={convertedData} />
       <ExpensesChart localData={data} remoteData={convertedData} />
