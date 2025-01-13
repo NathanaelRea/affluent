@@ -36,7 +36,7 @@ export function SelectRHF<T extends FieldValues>({
         <FormItem>
           {label && <FormLabel>{label}</FormLabel>}
           <FormControl>
-            <Select {...field}>
+            <Select {...field} onValueChange={field.onChange}>
               <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>
