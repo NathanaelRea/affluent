@@ -137,7 +137,7 @@ const DEFAULT_VALUES: MyForm = {
   ],
 };
 
-export default function COL() {
+export default function CostOfLiving() {
   const defaultValues = loadFromLocalStorage()?.data ?? DEFAULT_VALUES;
 
   function resetDefaults() {
