@@ -405,11 +405,12 @@ function Results({ data }: { data: MyForm }) {
   }, [data.rothIRAContribution, convertedData]);
 
   return (
-    <div>
-      <h2 className="text-xl" ref={resultsRef}>
-        Results
-      </h2>
-      <div>
+    <div className="flex flex-col gap-2" ref={resultsRef}>
+      <div className="flex justify-between">
+        <div className="flex gap-2 items-end">
+          <h2 className="text-2xl">{formatMoney(convertedData.salary)}</h2>
+          <span className="text-sm text-muted-foreground">Required Income</span>
+        </div>
         <Combobox
           name="city"
           items={CITIES.map((c) => ({
@@ -420,9 +421,6 @@ function Results({ data }: { data: MyForm }) {
           setValue={(c) => setRemoteCity(c as City)}
         />
       </div>
-      <Label>Required Income</Label>
-      <h2 className="text-2xl">{formatMoney(convertedData.salary)}</h2>
-      <h2 className="text-xl">Overview</h2>
       <OverviewChart localData={data} remoteData={convertedData} />
       <ExpensesChart localData={data} remoteData={convertedData} />
     </div>
