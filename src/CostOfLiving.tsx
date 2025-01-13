@@ -399,7 +399,7 @@ function Results({ data }: { data: MyForm }) {
           data.rothIRAContribution,
         )} to ${formatMoney(
           convertedData.rothIRAContribution,
-        )}. The excess has been put in after tax investments.`,
+        )}. The excess is assumed to be moved into after tax investments.`,
       );
     }
   }, [data.rothIRAContribution, convertedData]);
