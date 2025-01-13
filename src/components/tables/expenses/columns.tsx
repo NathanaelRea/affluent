@@ -107,14 +107,15 @@ export const expenseColumns: ColumnDef<Expenses>[] = [
       const delFn = table.options.meta?.deleteRow;
       return (
         <Button
-          size="sm"
+          size={"sm"}
+          title="Delete row"
           variant="ghost"
           type="button"
           disabled={delFn === undefined}
           onClick={() => delFn?.(row.index)}
-          className="cursor-pointer text-destructive"
+          className="cursor-pointer text-destructive p-1"
         >
-          <Trash2Icon className="h-4" />
+          <Trash2Icon className="h-2" />
         </Button>
       );
     },
