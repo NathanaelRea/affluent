@@ -4,7 +4,6 @@ import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { useEffect, useRef, useState } from "react";
-import { Label } from "./components/ui/label";
 import { formatMoney, secantMethod } from "./lib/utils";
 import { Combobox } from "./components/combobox";
 import {
