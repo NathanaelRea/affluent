@@ -16,7 +16,7 @@ import {
   ChartTooltipContent,
 } from "./components/ui/chart";
 import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from "recharts";
-import { PlusIcon } from "lucide-react";
+import { CircleHelpIcon, PlusIcon } from "lucide-react";
 import { toast } from "sonner";
 import {
   cities,
@@ -41,7 +41,7 @@ const formSchema = z
   .object({
     city: citySchema,
     status: taxStatusSchema,
-    age: z.coerce.number(),
+    age: z.string(),
     salary: z.coerce.number(),
     fourOhOneK: z.coerce.number().min(0).max(1, "Maximum of 100%"),
     hsaContribution: z.coerce.number(),
@@ -97,7 +97,7 @@ function rothIRALimit(data: MyForm) {
   const modifiedAGI = calculateModifiedAGI(data);
   const { range, limit, limit50 } = FED_TAX.rothIRAMaxContribution;
   const { low, high } = range[data.status];
-  const maxContributionForAge = data.age >= 50 ? limit50 : limit;
+  const maxContributionForAge = data.age == ">= 50" ? limit50 : limit;
   const maxRoth =
     modifiedAGI <= low
       ? maxContributionForAge
@@ -121,10 +121,10 @@ const DEFAULT_VALUES: MyForm = {
   city: "Philadelphia",
   status: "Single",
   salary: 100_000,
-  age: 30,
+  age: "< 50",
   fourOhOneK: 0.05,
   hsaContribution: 1_000,
-  rothIRAContribution: 4_810,
+  rothIRAContribution: 7_000,
   afterTaxInvestments: 0,
   expenses: [
     { name: "Rent", amount: 1_000, category: "Housing" },
@@ -167,8 +167,13 @@ function Inner({
     saveToLocalStorage(data);
   };
 
+  const currentHsa = form.watch("hsaContribution");
   const maxHsa = hsaLimit(form.getValues());
-  const maxRoth = rothIRALimit(form.getValues());
+  const isHsaMax = currentHsa == maxHsa;
+
+  const currentRoth = form.watch("rothIRAContribution");
+  const maxRoth = rothIRALimit(form.watch());
+  const isRothMax = currentRoth == maxRoth.maxRoth;
 
   return (
     <>
@@ -201,7 +206,26 @@ function Inner({
               value: c,
             }))}
           />
-          <InputRHF form={form} formKey="age" label="Age" />
+          <ComboboxRHF
+            form={form}
+            formKey="age"
+            label={
+              <div className="flex gap-1 items-center">
+                Age
+                <div
+                  title="Used to determine max roth contribution"
+                  className="cursor-pointer text-muted-foreground"
+                >
+                  <CircleHelpIcon className="h-3" />
+                </div>
+              </div>
+            }
+            items={["< 50", ">= 50"].map((c) => ({
+              label: c,
+              value: c,
+            }))}
+          />
+          <div />
           <InputRHF form={form} formKey="salary" label="Salary" type="money" />
           <InputRHF
             form={form}
@@ -221,12 +245,12 @@ function Inner({
                   variant="ghost"
                   size={null}
                   title="Set to max"
-                  disabled={maxHsa == form.watch("hsaContribution")}
+                  disabled={isHsaMax}
                   onClick={() =>
                     form.setValue("hsaContribution", hsaLimit(form.getValues()))
                   }
                 >
-                  Max
+                  {isHsaMax ? "Max" : "(not max)"}
                 </Button>
               </>
             }
@@ -244,9 +268,7 @@ function Inner({
                   variant="ghost"
                   size={null}
                   title="Set to max"
-                  disabled={
-                    maxRoth.maxRoth == form.watch("rothIRAContribution")
-                  }
+                  disabled={isRothMax}
                   onClick={() =>
                     form.setValue(
                       "rothIRAContribution",
@@ -254,7 +276,7 @@ function Inner({
                     )
                   }
                 >
-                  Max
+                  {isRothMax ? "Max" : "(not max)"}
                 </Button>
               </>
             }
