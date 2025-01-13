@@ -15,12 +15,18 @@ export default function Layout() {
     <div className="flex flex-col h-full min-h-screen">
       <nav className="border-b-2 border-cyan-900 flex justify-center py-2 px-6">
         <div className="flex justify-between items-center max-w-2xl w-full">
-          <span className="font-bold">Affluent</span>
+          <span className="font-semibold text-lg text-transparent bg-clip-text bg-gradient-to-r from-emerald-500 to-sky-500">
+            Affluent
+          </span>
           <NavMenu />
         </div>
       </nav>
       <div className="flex-grow">
-        <Outlet />
+        <div className="flex flex-col justify-center items-center p-4 h-full">
+          <main className="flex flex-col max-w-2xl w-full">
+            <Outlet />
+          </main>
+        </div>
       </div>
       <footer className="border-t-2 border-cyan-900 flex justify-center py-2">
         <div className="flex items-center justify-center gap-2">

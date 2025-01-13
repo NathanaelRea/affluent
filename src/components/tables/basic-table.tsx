@@ -129,7 +129,7 @@ export function BasicActions<TData extends RowData>({
       <DropdownMenuContent align="end">
         <DropdownMenuLabel>Actions</DropdownMenuLabel>
         <DropdownMenuItem
-          className="cursor-pointer text-red-500"
+          className="cursor-pointer text-destructive"
           disabled={delFun === undefined}
           onClick={() => delFun?.(index)}
         >

@@ -12,20 +12,20 @@ import { moneyFormatter, percentFormatter } from "@/lib/utils";
 
 type FormatType = "money" | "percentage";
 
-type InputWithFormatRHFProps<T extends FieldValues> = {
+type InputRHFProps<T extends FieldValues> = {
   form: UseFormReturn<T>;
   formKey: Path<T>;
   label?: ReactNode;
   placeholder?: string;
-  type: FormatType;
+  type?: FormatType;
 };
-export function InputWithFormatRHF<T extends FieldValues>({
+export function InputRHF<T extends FieldValues>({
   form,
   formKey,
   label,
   placeholder,
   type,
-}: InputWithFormatRHFProps<T>) {
+}: InputRHFProps<T>) {
   return (
     <FormField
       control={form.control}
@@ -34,13 +34,17 @@ export function InputWithFormatRHF<T extends FieldValues>({
         <FormItem>
           {label && <FormLabel>{label}</FormLabel>}
           <FormControl>
-            <InputWithFormat
-              value={field.value}
-              onChange={field.onChange}
-              onBlur={field.onBlur}
-              type={type}
-              placeholder={placeholder}
-            />
+            {type ? (
+              <InputWithFormat
+                value={field.value}
+                onChange={field.onChange}
+                onBlur={field.onBlur}
+                type={type}
+                placeholder={placeholder}
+              />
+            ) : (
+              <Input type="text" {...field} />
+            )}
           </FormControl>
           <FormMessage />
         </FormItem>

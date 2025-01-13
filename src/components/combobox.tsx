@@ -19,7 +19,7 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 
-type Item = {
+export type Item = {
   label: string;
   value: string;
 };

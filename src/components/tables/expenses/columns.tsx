@@ -1,10 +1,11 @@
 import { ColumnDef } from "@tanstack/react-table";
 import { z } from "zod";
-import { BasicActions } from "../basic-table";
 import { categories, categoryScheama } from "@/data";
 import { Combobox } from "@/components/combobox";
 import { Input } from "@/components/ui/input";
-import { InputWithFormat } from "@/components/InputWithFormat";
+import { InputWithFormat } from "@/components/InputRHF";
+import { Trash2Icon } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 export const expensesSchema = z.object({
   name: z.string(),
@@ -70,8 +71,20 @@ export const expenseColumns: ColumnDef<Expenses>[] = [
   },
   {
     id: "actions",
-    cell: ({ row, table }) => (
-      <BasicActions meta={table.options.meta} index={row.index} />
-    ),
+    cell: ({ row, table }) => {
+      const delFn = table.options.meta?.deleteRow;
+      return (
+        <Button
+          size="sm"
+          variant="ghost"
+          type="button"
+          disabled={delFn === undefined}
+          onClick={() => delFn?.(row.index)}
+          className="cursor-pointer text-destructive"
+        >
+          <Trash2Icon className="h-4" />
+        </Button>
+      );
+    },
   },
 ];

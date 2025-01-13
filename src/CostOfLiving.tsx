@@ -1,5 +1,5 @@
 import { Button } from "./components/ui/button";
-import { Form, FormLabel } from "./components/ui/form";
+import { Form } from "./components/ui/form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
@@ -16,7 +16,7 @@ import {
   ChartTooltipContent,
 } from "./components/ui/chart";
 import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from "recharts";
-import { ChevronsUp, Minus, PlusIcon } from "lucide-react";
+import { CircleHelpIcon, PlusIcon } from "lucide-react";
 import { toast } from "sonner";
 import {
   cities,
@@ -30,18 +30,18 @@ import {
   CITIES,
   states,
 } from "./data";
-import { FIELD } from "./components/FIELD";
 import { expensesSchema } from "./components/tables/expenses/columns";
 import { DataTable } from "./components/tables/basic-table";
 import { expenseColumns } from "./components/tables/expenses/columns";
 import { FED_TAX, CITY_TAX, STATE_TAX, COST_OF_LIVING } from "./data2024";
-import { InputWithFormatRHF } from "./components/InputWithFormat";
+import { InputRHF } from "./components/InputRHF";
+import { ComboboxRHF } from "./components/ComboboxRHF";
 
 const formSchema = z
   .object({
     city: citySchema,
     status: taxStatusSchema,
-    age: z.coerce.number(),
+    age: z.string(),
     salary: z.coerce.number(),
     fourOhOneK: z.coerce.number().min(0).max(1, "Maximum of 100%"),
     hsaContribution: z.coerce.number(),
@@ -70,6 +70,21 @@ const formSchema = z
         argumentsError: new z.ZodError([]),
       });
     }
+
+    const agi = rothLimit.modifiedAGI;
+    const totalExpenses = data.expenses.reduce(
+      (acc, val) => acc + val.amount * 12,
+      0,
+    );
+    if (agi - data.rothIRAContribution - totalExpenses < 0) {
+      ctx.addIssue({
+        message: `Expenses and investments cannot exceed modified gross income (${formatMoney(agi)}).`,
+        path: ["expenses"],
+        code: "invalid_arguments",
+        fatal: true,
+        argumentsError: new z.ZodError([]),
+      });
+    }
   });
 
 function calculateModifiedAGI(data: MyForm) {
@@ -78,12 +93,11 @@ function calculateModifiedAGI(data: MyForm) {
     data.salary - standardDeduction - data.hsaContribution - data.fourOhOneK
   );
 }
-
 function rothIRALimit(data: MyForm) {
   const modifiedAGI = calculateModifiedAGI(data);
   const { range, limit, limit50 } = FED_TAX.rothIRAMaxContribution;
   const { low, high } = range[data.status];
-  const maxContributionForAge = data.age >= 50 ? limit50 : limit;
+  const maxContributionForAge = data.age == ">= 50" ? limit50 : limit;
   const maxRoth =
     modifiedAGI <= low
       ? maxContributionForAge
@@ -107,10 +121,10 @@ const DEFAULT_VALUES: MyForm = {
   city: "Philadelphia",
   status: "Single",
   salary: 100_000,
-  age: 30,
+  age: "< 50",
   fourOhOneK: 0.05,
   hsaContribution: 1_000,
-  rothIRAContribution: 4_810,
+  rothIRAContribution: 7_000,
   afterTaxInvestments: 0,
   expenses: [
     { name: "Rent", amount: 1_000, category: "Housing" },
@@ -123,7 +137,7 @@ const DEFAULT_VALUES: MyForm = {
   ],
 };
 
-export default function COL() {
+export default function CostOfLiving() {
   const defaultValues = loadFromLocalStorage()?.data ?? DEFAULT_VALUES;
 
   function resetDefaults() {
@@ -153,124 +167,128 @@ function Inner({
     saveToLocalStorage(data);
   };
 
+  const currentHsa = form.watch("hsaContribution");
   const maxHsa = hsaLimit(form.getValues());
-  const maxRoth = rothIRALimit(form.getValues());
+  const isHsaMax = currentHsa == maxHsa;
+
+  const currentRoth = form.watch("rothIRAContribution");
+  const maxRoth = rothIRALimit(form.watch());
+  const isRothMax = currentRoth == maxRoth.maxRoth;
 
   return (
-    <div className="flex flex-col justify-center items-center p-4 h-full">
-      <main className="flex flex-col max-w-4xl w-full">
-        <h1 className="text-2xl">Cost of living in depth</h1>
-        <h2 className="text-gray-400 px-4">
-          Compare cost of living with in depth analysis. Using
-          (federal/state/city) taxes, category based cost of living adjustments,
-          and more!
-        </h2>
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="py-8">
-            <FormLabel>Filing Status</FormLabel>
-            <div>
-              <Combobox
-                disabled
-                name="status"
-                items={TAX_STATUS.map((status) => ({
-                  value: status,
-                  label: status,
-                }))}
-                value="Single"
-                setValue={() => {}}
-              />
-            </div>
-            <FormLabel>City</FormLabel>
-            <div>
-              <Combobox
-                disabled
-                name="city"
-                items={CITIES.map((c) => ({
-                  label: `${c}, ${states[cities[c].state].abbreviation}`,
-                  value: c,
-                }))}
-                value={"Philadelphia"}
-                setValue={() => {}}
-              />
-            </div>
-            <FIELD form={form} formKey="age" label="Age" />
-            <h2 className="text-xl">Income</h2>
-            <InputWithFormatRHF
-              form={form}
-              formKey="salary"
-              label="Salary"
-              type="money"
-            />
-            <InputWithFormatRHF
-              form={form}
-              formKey="fourOhOneK"
-              label="401(k)"
-              type="percentage"
-            />
-            <InputWithFormatRHF
-              form={form}
-              formKey="hsaContribution"
-              label={
-                <div className="flex gap-2 items-center">
-                  HSA
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    title="Set to max"
-                    onClick={() =>
-                      form.setValue(
-                        "hsaContribution",
-                        hsaLimit(form.getValues()),
-                      )
-                    }
-                  >
-                    {maxHsa == form.getValues("hsaContribution") ? (
-                      <Minus />
-                    ) : (
-                      <ChevronsUp />
-                    )}
-                  </Button>
+    <>
+      <h1 className="text-2xl">Cost of living in depth</h1>
+      <h2 className="text-gray-400 text-pretty">
+        Compare cost of living between cities with in depth analysis. Using
+        (federal/state/city) taxes, category based cost of living adjustments,
+        and more!
+      </h2>
+      <Form {...form}>
+        <form
+          onSubmit={form.handleSubmit(onSubmit)}
+          className="grid grid-cols-2 gap-4 py-8"
+        >
+          <ComboboxRHF
+            form={form}
+            formKey="status"
+            label="Filing Status"
+            items={TAX_STATUS.map((status) => ({
+              value: status,
+              label: status,
+            }))}
+          />
+          <ComboboxRHF
+            form={form}
+            formKey="city"
+            label="City"
+            items={CITIES.map((c) => ({
+              label: `${c}, ${states[cities[c].state].abbreviation}`,
+              value: c,
+            }))}
+          />
+          <ComboboxRHF
+            form={form}
+            formKey="age"
+            label={
+              <div className="flex gap-1 items-center">
+                Age
+                <div
+                  title="Used to determine max roth contribution"
+                  className="cursor-pointer text-muted-foreground"
+                >
+                  <CircleHelpIcon className="h-3" />
                 </div>
-              }
-              type="money"
-            />
-            <InputWithFormatRHF
-              form={form}
-              formKey="rothIRAContribution"
-              label={
-                <div className="flex gap-2 items-center">
-                  Roth IRA
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    title="Set to max"
-                    onClick={() =>
-                      form.setValue(
-                        "rothIRAContribution",
-                        rothIRALimit(form.getValues()).maxRoth,
-                      )
-                    }
-                  >
-                    {maxRoth.maxRoth ==
-                    form.getValues("rothIRAContribution") ? (
-                      <Minus />
-                    ) : (
-                      <ChevronsUp />
-                    )}
-                  </Button>
-                </div>
-              }
-              type="money"
-            />
-            <InputWithFormatRHF
-              form={form}
-              formKey="afterTaxInvestments"
-              label="After tax investments"
-              type="money"
-            />
-            <h2 className="text-xl">Expenses</h2>
+              </div>
+            }
+            items={["< 50", ">= 50"].map((c) => ({
+              label: c,
+              value: c,
+            }))}
+          />
+          <div />
+          <InputRHF form={form} formKey="salary" label="Salary" type="money" />
+          <InputRHF
+            form={form}
+            formKey="fourOhOneK"
+            label="401(k)"
+            type="percentage"
+          />
+          <InputRHF
+            form={form}
+            formKey="hsaContribution"
+            label={
+              <>
+                HSA
+                <Button
+                  className="text-xs py-0 p-0 px-2"
+                  type="button"
+                  variant="ghost"
+                  size={null}
+                  title="Set to max"
+                  disabled={isHsaMax}
+                  onClick={() =>
+                    form.setValue("hsaContribution", hsaLimit(form.getValues()))
+                  }
+                >
+                  {isHsaMax ? "Max" : "(not max)"}
+                </Button>
+              </>
+            }
+            type="money"
+          />
+          <InputRHF
+            form={form}
+            formKey="rothIRAContribution"
+            label={
+              <>
+                Roth IRA
+                <Button
+                  className="text-xs py-0 p-0 px-2"
+                  type="button"
+                  variant="ghost"
+                  size={null}
+                  title="Set to max"
+                  disabled={isRothMax}
+                  onClick={() =>
+                    form.setValue(
+                      "rothIRAContribution",
+                      rothIRALimit(form.getValues()).maxRoth,
+                    )
+                  }
+                >
+                  {isRothMax ? "Max" : "(not max)"}
+                </Button>
+              </>
+            }
+            type="money"
+          />
+          <InputRHF
+            form={form}
+            formKey="afterTaxInvestments"
+            label="After tax investments"
+            type="money"
+          />
+          <div className="col-span-2">
             <DataTable
               data={form.watch("expenses")}
               columns={expenseColumns}
@@ -311,19 +329,24 @@ function Inner({
             >
               <PlusIcon />
             </Button>
-            <div className="flex items-center justify-between">
-              <Button variant="outline" onClick={resetDefaults}>
-                Reset
-              </Button>
-              <Button type="submit" onClick={form.handleSubmit(onSubmit)}>
-                Submit
-              </Button>
-            </div>
-          </form>
-        </Form>
-        {data && <Results data={data} />}
-      </main>
-    </div>
+          </div>
+          {form.formState.errors?.expenses && (
+            <p className="col-span-2 text-[0.8rem] font-medium text-destructive">
+              {form.formState.errors?.expenses?.message}
+            </p>
+          )}
+          <div className="flex items-center justify-between col-span-2">
+            <Button variant="outline" onClick={resetDefaults}>
+              Reset
+            </Button>
+            <Button type="submit" onClick={form.handleSubmit(onSubmit)}>
+              Submit
+            </Button>
+          </div>
+        </form>
+      </Form>
+      {data && <Results data={data} />}
+    </>
   );
 }
 
@@ -376,7 +399,7 @@ function Results({ data }: { data: MyForm }) {
           data.rothIRAContribution,
         )} to ${formatMoney(
           convertedData.rothIRAContribution,
-        )}. The excess has been put in after tax investments.`,
+        )}. The excess is assumed to be moved into after tax investments.`,
       );
     }
   }, [data.rothIRAContribution, convertedData]);
