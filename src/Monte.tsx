@@ -76,40 +76,45 @@ export default function Monte() {
   const portfolio = form.watch("portfolio");
 
   return (
-    <div className="flex flex-col justify-center items-center p-4 h-full">
-      <main className="flex flex-col max-w-4xl w-full">
-        <h1 className="text-2xl">Safe withdraw rate Monte Carlo</h1>
-        <h2 className="text-gray-400">
-          Use Monte Carlo simulations to see the performance of an investment
-          portfolio using a constant withdraw rate.
-        </h2>
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="py-8">
-            <InputRHF form={form} formKey="years" label="Years" />
-            <InputRHF
-              form={form}
-              formKey="initialInvestment"
-              label="Initial Investment"
-              type="money"
-            />
-            <InputRHF
-              form={form}
-              formKey="withdrawRate"
-              label="Withdraw Rate"
-              type="percentage"
-            />
-            <InputRHF
-              form={form}
-              formKey="inflation"
-              label="Inflation"
-              type="percentage"
-            />
-            <InputRHF
-              form={form}
-              formKey="simCount"
-              label="Number of Simulations"
-            />
-            <FormLabel className="font-bold text-lg">Portfolio</FormLabel>
+    <>
+      <h1 className="text-2xl">Safe withdraw rate Monte Carlo</h1>
+      <h2 className="text-gray-400">
+        Use Monte Carlo simulations to see the performance of an investment
+        portfolio using a constant withdraw rate.
+      </h2>
+      <Form {...form}>
+        <form
+          onSubmit={form.handleSubmit(onSubmit)}
+          className="grid grid-cols-2 gap-4 py-8"
+        >
+          <InputRHF form={form} formKey="years" label="Years" />
+          <InputRHF
+            form={form}
+            formKey="initialInvestment"
+            label="Initial Investment"
+            type="money"
+          />
+          <InputRHF
+            form={form}
+            formKey="withdrawRate"
+            label="Withdraw Rate"
+            type="percentage"
+          />
+          <InputRHF
+            form={form}
+            formKey="inflation"
+            label="Inflation"
+            type="percentage"
+          />
+          <InputRHF
+            form={form}
+            formKey="simCount"
+            label="Number of Simulations"
+          />
+          <FormLabel className="font-bold text-lg col-span-2">
+            Portfolio
+          </FormLabel>
+          <div className="col-span-2">
             <DataTable
               columns={fundColumns}
               data={portfolio}
@@ -148,11 +153,11 @@ export default function Monte() {
                 Simulate
               </Button>
             </div>
-          </form>
-        </Form>
-        {parsedData && <Chart parsedData={parsedData} />}
-      </main>
-    </div>
+          </div>
+        </form>
+      </Form>
+      {parsedData && <Chart parsedData={parsedData} />}
+    </>
   );
 }
 
