@@ -175,7 +175,7 @@ function Inner({
       <main className="flex flex-col max-w-2xl w-full">
         <h1 className="text-2xl">Cost of living in depth</h1>
         <h2 className="text-gray-400 text-pretty">
-          Compare cost of living with in depth analysis. Using
+          Compare cost of living between cities with in depth analysis. Using
           (federal/state/city) taxes, category based cost of living adjustments,
           and more!
         </h2>
@@ -318,19 +318,19 @@ function Inner({
                   >
                     <PlusIcon />
                   </Button>
-                  {form.formState.errors?.expenses && (
-                    <p className="text-[0.8rem] font-medium text-destructive">
-                      {form.formState.errors?.expenses?.message}
-                    </p>
-                  )}
-                  <div className="flex items-center justify-between">
-                    <Button variant="outline" onClick={resetDefaults}>
-                      Reset
-                    </Button>
-                    <Button type="submit" onClick={form.handleSubmit(onSubmit)}>
-                      Submit
-                    </Button>
-                  </div>
+                </div>
+                {form.formState.errors?.expenses && (
+                  <p className="col-span-2 text-[0.8rem] font-medium text-destructive">
+                    {form.formState.errors?.expenses?.message}
+                  </p>
+                )}
+                <div className="flex items-center justify-between col-span-2">
+                  <Button variant="outline" onClick={resetDefaults}>
+                    Reset
+                  </Button>
+                  <Button type="submit" onClick={form.handleSubmit(onSubmit)}>
+                    Submit
+                  </Button>
                 </div>
               </form>
             </Form>
