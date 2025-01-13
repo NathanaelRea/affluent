@@ -577,9 +577,14 @@ function OverviewChart({
       remote: remoteTaxes.hsa,
     },
     {
-      name: "Expenses",
-      local: localTaxes.expenses,
-      remote: remoteTaxes.expenses,
+      name: "Roth IRA",
+      local: localTaxes.rothIRAContribution,
+      remote: remoteTaxes.rothIRAContribution,
+    },
+    {
+      name: "After Tax",
+      local: localTaxes.afterTaxInvestments,
+      remote: remoteTaxes.afterTaxInvestments,
     },
   ];
 
