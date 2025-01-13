@@ -148,11 +148,11 @@ export default function Monte() {
             >
               <PlusIcon className="h-2" />
             </Button>
-            <div className="flex justify-end">
-              <Button type="submit" disabled={isPending}>
-                Simulate
-              </Button>
-            </div>
+          </div>
+          <div className="flex justify-end col-span-2">
+            <Button type="submit" disabled={isPending}>
+              Simulate
+            </Button>
           </div>
         </form>
       </Form>
