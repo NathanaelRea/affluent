@@ -35,6 +35,7 @@ import { expenseColumns } from "./components/tables/expenses/columns";
 import { FED_TAX, CITY_TAX, STATE_TAX, COST_OF_LIVING } from "./data2024";
 import { InputRHF } from "./components/InputRHF";
 import { ComboboxRHF } from "./components/ComboboxRHF";
+import { SelectRHF } from "./components/SelectRHF";
 
 const formSchema = z
   .object({
@@ -205,7 +206,7 @@ function Inner({
               value: c,
             }))}
           />
-          <ComboboxRHF
+          <SelectRHF
             form={form}
             formKey="age"
             label={
@@ -335,7 +336,7 @@ function Inner({
             </p>
           )}
           <div className="flex items-center justify-between col-span-2">
-            <Button variant="outline" onClick={resetDefaults}>
+            <Button variant="outline" onClick={resetDefaults} type="button">
               Reset
             </Button>
             <Button type="submit" onClick={form.handleSubmit(onSubmit)}>
@@ -405,20 +406,22 @@ function Results({ data }: { data: MyForm }) {
 
   return (
     <div className="flex flex-col gap-2" ref={resultsRef}>
-      <div className="flex justify-between">
-        <div className="flex gap-2 items-end">
-          <h2 className="text-2xl">{formatMoney(convertedData.salary)}</h2>
+      <div className="flex justify-between items-end">
+        <div className="flex flex-col gap-2 items-end text-nowrap">
           <span className="text-sm text-muted-foreground">Required Income</span>
+          <h2 className="text-2xl">{formatMoney(convertedData.salary)}</h2>
         </div>
-        <Combobox
-          name="city"
-          items={CITIES.map((c) => ({
-            label: `${c}, ${states[cities[c].state].abbreviation}`,
-            value: c,
-          }))}
-          value={remoteCity}
-          setValue={(c) => setRemoteCity(c as City)}
-        />
+        <div>
+          <Combobox
+            name="city"
+            items={CITIES.map((c) => ({
+              label: `${c}, ${states[cities[c].state].abbreviation}`,
+              value: c,
+            }))}
+            value={remoteCity}
+            setValue={(c) => setRemoteCity(c as City)}
+          />
+        </div>
       </div>
       <OverviewChart localData={data} remoteData={convertedData} />
       <ExpensesChart localData={data} remoteData={convertedData} />
@@ -574,9 +577,14 @@ function OverviewChart({
       remote: remoteTaxes.hsa,
     },
     {
-      name: "Expenses",
-      local: localTaxes.expenses,
-      remote: remoteTaxes.expenses,
+      name: "Roth IRA",
+      local: localTaxes.rothIRAContribution,
+      remote: remoteTaxes.rothIRAContribution,
+    },
+    {
+      name: "After Tax",
+      local: localTaxes.afterTaxInvestments,
+      remote: remoteTaxes.afterTaxInvestments,
     },
   ];
 
