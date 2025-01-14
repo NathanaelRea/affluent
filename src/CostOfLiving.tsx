@@ -101,7 +101,6 @@ function rothIRALimit(data: MyForm) {
   const { low, high } = range[data.status];
   const maxContributionForAge =
     data.age == "< 50" ? limit : limit + catchupContribution;
-  console.log("ROTH MAX", maxContributionForAge);
   const maxRoth =
     modifiedAGI <= low
       ? maxContributionForAge
