@@ -75,11 +75,14 @@ export type FedTax = {
   standardDeduction: number;
   socialSecurity: number;
   medicare: number;
-  hsaMaxContribution: StatusBased<number>;
+  hsaMaxContribution: {
+    contribution: StatusBased<number>;
+    catchupContribution: number;
+  };
   rothIRAMaxContribution: {
     range: StatusBased<RangeBased>;
     limit: number;
-    limit50: number;
+    catchupContribution: number;
   };
   rates: Tax;
 };
@@ -197,3 +200,6 @@ export const categories = [
 ] as const;
 export type Category = (typeof categories)[number];
 export const categoryScheama = z.enum(categories);
+
+export const ages = ["< 50", ">= 50, < 55", ">= 55"] as const;
+export const agesSchema = z.enum(ages);

@@ -28,6 +28,8 @@ import {
   Category,
   CITIES,
   states,
+  ages,
+  agesSchema,
 } from "./data";
 import { expensesSchema } from "./components/tables/expenses/columns";
 import { DataTable } from "./components/tables/basic-table";
@@ -41,7 +43,7 @@ const formSchema = z
   .object({
     city: citySchema,
     status: taxStatusSchema,
-    age: z.string(),
+    age: agesSchema,
     salary: z.coerce.number(),
     fourOhOneK: z.coerce.number().min(0).max(1, "Maximum of 100%"),
     hsaContribution: z.coerce.number(),
@@ -95,9 +97,10 @@ function calculateModifiedAGI(data: MyForm) {
 }
 function rothIRALimit(data: MyForm) {
   const modifiedAGI = calculateModifiedAGI(data);
-  const { range, limit, limit50 } = FED_TAX.rothIRAMaxContribution;
+  const { range, limit, catchupContribution } = FED_TAX.rothIRAMaxContribution;
   const { low, high } = range[data.status];
-  const maxContributionForAge = data.age == ">= 50" ? limit50 : limit;
+  const maxContributionForAge =
+    data.age == "< 50" ? limit : limit + catchupContribution;
   const maxRoth =
     modifiedAGI <= low
       ? maxContributionForAge
@@ -112,7 +115,11 @@ function rothIRALimit(data: MyForm) {
 }
 
 function hsaLimit(data: MyForm) {
-  return FED_TAX.hsaMaxContribution[data.status];
+  const catchupContribution = FED_TAX.hsaMaxContribution.catchupContribution;
+  const contribution = FED_TAX.hsaMaxContribution.contribution[data.status];
+  return data.age == ">= 55"
+    ? contribution + catchupContribution
+    : contribution;
 }
 
 type MyForm = z.infer<typeof formSchema>;
@@ -213,14 +220,14 @@ function Inner({
               <div className="flex gap-1 items-center">
                 Age
                 <div
-                  title="Used to determine max roth contribution"
+                  title="Used to determine max Roth/HSA contribution"
                   className="cursor-pointer text-muted-foreground"
                 >
                   <CircleHelpIcon className="h-3" />
                 </div>
               </div>
             }
-            items={["< 50", ">= 50"].map((c) => ({
+            items={ages.map((c) => ({
               label: c,
               value: c,
             }))}
@@ -393,13 +400,18 @@ function Results({ data }: { data: MyForm }) {
   }, []);
 
   useEffect(() => {
-    if (data.rothIRAContribution != convertedData.rothIRAContribution) {
+    const roth1 = data.rothIRAContribution;
+    const roth2 = convertedData.rothIRAContribution;
+    const baseMessage = `Roth IRA contribution has been adjusted from ${formatMoney(
+      roth1,
+    )} to ${formatMoney(roth2)}.`;
+    if (roth1 > roth2) {
       toast.warning(
-        `Roth IRA contribution has been adjusted from ${formatMoney(
-          data.rothIRAContribution,
-        )} to ${formatMoney(
-          convertedData.rothIRAContribution,
-        )}. The excess is assumed to be moved into after tax investments.`,
+        `${baseMessage} The excess is assumed to be moved into after tax investments.`,
+      );
+    } else if (roth1 < roth2) {
+      toast.warning(
+        `${baseMessage} A lower salary could restore your full Roth IRA eligability.`,
       );
     }
   }, [data.rothIRAContribution, convertedData]);
