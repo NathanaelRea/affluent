@@ -38,6 +38,7 @@ import { FED_TAX, CITY_TAX, STATE_TAX, COST_OF_LIVING } from "./data2024";
 import { InputRHF } from "./components/InputRHF";
 import { ComboboxRHF } from "./components/ComboboxRHF";
 import { SelectRHF } from "./components/SelectRHF";
+import ErrorMessage from "./components/ErrorMessage";
 
 const formSchema = z
   .object({
@@ -337,11 +338,7 @@ function Inner({
               <PlusIcon />
             </Button>
           </div>
-          {form.formState.errors?.expenses && (
-            <p className="col-span-2 text-[0.8rem] font-medium text-destructive">
-              {form.formState.errors?.expenses?.message}
-            </p>
-          )}
+          <ErrorMessage message={form.formState.errors?.expenses?.message} />
           <div className="flex items-center justify-between col-span-2">
             <Button variant="outline" onClick={resetDefaults} type="button">
               Reset

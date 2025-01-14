@@ -20,20 +20,38 @@ import {
   fundSchema,
 } from "./components/tables/portfolio/columns";
 import { InputRHF } from "./components/InputRHF";
+import ErrorMessage from "./components/ErrorMessage.tsx";
+import FundDialog from "./components/FundDialog.tsx";
 
 type Simulation = {
   year: number;
   [key: string]: number;
 };
 
-const formSchema = z.object({
-  years: z.coerce.number(),
-  simCount: z.coerce.number().max(200, ">200 is a bit slow for recharts"),
-  initialInvestment: z.coerce.number(),
-  inflation: z.coerce.number().min(0).max(1, "Maximum of 100%"),
-  withdrawRate: z.coerce.number().min(0).max(1, "Maximum of 100%"),
-  portfolio: z.array(fundSchema),
-});
+const formSchema = z
+  .object({
+    years: z.coerce.number(),
+    simCount: z.coerce.number().max(200, ">200 is a bit slow for recharts"),
+    initialInvestment: z.coerce.number(),
+    inflation: z.coerce.number().min(0).max(1, "Maximum of 100%"),
+    withdrawRate: z.coerce.number().min(0).max(1, "Maximum of 100%"),
+    portfolio: z.array(fundSchema),
+  })
+  .superRefine((data, ctx) => {
+    const weightTotal = data.portfolio.reduce(
+      (acc, val) => acc + val.weight,
+      0,
+    );
+    const tol = 1e-4;
+    if (Math.abs(weightTotal - 1) > tol) {
+      ctx.addIssue({
+        message: `Portfolio weights must sum to 100%`,
+        path: ["portfolio"],
+        code: "invalid_arguments",
+        argumentsError: new z.ZodError([]),
+      });
+    }
+  });
 type MyForm = z.infer<typeof formSchema>;
 
 const defaultValues: MyForm = {
@@ -125,30 +143,22 @@ export default function Monte() {
                 );
               }}
             />
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              className="w-full"
-              onClick={() => {
-                const curWeight = portfolio.reduce(
-                  (acc, fund) => acc + fund.weight,
-                  0,
-                );
-                form.setValue("portfolio", [
-                  ...portfolio,
-                  {
-                    name: "",
-                    mean: 0.07,
-                    std: 0.15,
-                    weight: 1 - curWeight,
-                  },
-                ]);
+            <FundDialog
+              handleSubmit={(data: Fund) => {
+                form.setValue("portfolio", [...portfolio, data]);
               }}
             >
-              <PlusIcon className="h-2" />
-            </Button>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="w-full"
+              >
+                <PlusIcon className="h-2" />
+              </Button>
+            </FundDialog>
           </div>
+          <ErrorMessage message={form.formState.errors?.portfolio?.message} />
           <div className="flex justify-end col-span-2">
             <Button type="submit" disabled={isPending}>
               Simulate
