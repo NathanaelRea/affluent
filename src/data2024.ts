@@ -144,9 +144,12 @@ export const FED_TAX: FedTax = {
   socialSecurity: 0.062,
   medicare: 0.0145,
   hsaMaxContribution: {
-    Single: 4_150,
-    Married: 8_300,
-    "Head of Household": 8_300,
+    contribution: {
+      Single: 4_150,
+      Married: 8_300,
+      "Head of Household": 8_300,
+    },
+    catchupContribution: 1_000,
   },
   rothIRAMaxContribution: {
     range: {
@@ -155,7 +158,7 @@ export const FED_TAX: FedTax = {
       "Head of Household": { low: 146_000, high: 161_000 },
     },
     limit: 7_000,
-    limit50: 8_000,
+    catchupContribution: 1_000,
   },
   rates: {
     type: "status-based",
