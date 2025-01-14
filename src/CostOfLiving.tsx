@@ -101,6 +101,7 @@ function rothIRALimit(data: MyForm) {
   const { low, high } = range[data.status];
   const maxContributionForAge =
     data.age == "< 50" ? limit : limit + catchupContribution;
+  console.log("ROTH MAX", maxContributionForAge);
   const maxRoth =
     modifiedAGI <= low
       ? maxContributionForAge
@@ -400,13 +401,18 @@ function Results({ data }: { data: MyForm }) {
   }, []);
 
   useEffect(() => {
-    if (data.rothIRAContribution != convertedData.rothIRAContribution) {
+    const roth1 = data.rothIRAContribution;
+    const roth2 = convertedData.rothIRAContribution;
+    const baseMessage = `Roth IRA contribution has been adjusted from ${formatMoney(
+      roth1,
+    )} to ${formatMoney(roth2)}.`;
+    if (roth1 > roth2) {
       toast.warning(
-        `Roth IRA contribution has been adjusted from ${formatMoney(
-          data.rothIRAContribution,
-        )} to ${formatMoney(
-          convertedData.rothIRAContribution,
-        )}. The excess is assumed to be moved into after tax investments.`,
+        `${baseMessage} The excess is assumed to be moved into after tax investments.`,
+      );
+    } else if (roth1 < roth2) {
+      toast.warning(
+        `${baseMessage} A lower salary could restore your full Roth IRA eligability.`,
       );
     }
   }, [data.rothIRAContribution, convertedData]);
