@@ -136,6 +136,16 @@ export default function Monte() {
             <DataTable
               columns={fundColumns}
               data={portfolio}
+              setValue={(name, value) => {
+                // this is kinda dumb
+                form.setValue(
+                  name as
+                    | `portfolio.${number}.mean`
+                    | `portfolio.${number}.std`
+                    | `portfolio.${number}.weight`,
+                  Number(value),
+                );
+              }}
               deleteRow={(index) => {
                 form.setValue(
                   "portfolio",
@@ -157,6 +167,7 @@ export default function Monte() {
                 <PlusIcon className="h-2" />
               </Button>
             </FundDialog>
+            <ErrorMessage message={form.formState.errors.portfolio?.message} />
           </div>
           <ErrorMessage message={form.formState.errors?.portfolio?.message} />
           <div className="flex justify-end col-span-2">
