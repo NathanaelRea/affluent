@@ -202,4 +202,5 @@ export type Category = (typeof categories)[number];
 export const categoryScheama = z.enum(categories);
 
 export const ages = ["< 50", ">= 50, < 55", ">= 55"] as const;
+export type Age = (typeof ages)[number];
 export const agesSchema = z.enum(ages);

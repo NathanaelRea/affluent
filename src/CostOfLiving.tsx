@@ -30,6 +30,7 @@ import {
   states,
   ages,
   agesSchema,
+  Age,
 } from "./data";
 import { expensesSchema } from "./components/tables/expenses/columns";
 import { DataTable } from "./components/tables/basic-table";
@@ -90,13 +91,26 @@ const formSchema = z
     }
   });
 
-function calculateModifiedAGI(data: MyForm) {
+function calculateModifiedAGI(data: {
+  salary: number;
+  hsaContribution: number;
+  fourOhOneK: number;
+}) {
   const standardDeduction = FED_TAX.standardDeduction;
   return (
-    data.salary - standardDeduction - data.hsaContribution - data.fourOhOneK
+    data.salary -
+    standardDeduction -
+    data.hsaContribution -
+    data.salary * data.fourOhOneK
   );
 }
-function rothIRALimit(data: MyForm) {
+function rothIRALimit(data: {
+  salary: number;
+  hsaContribution: number;
+  fourOhOneK: number;
+  status: TaxStatus;
+  age: Age;
+}) {
   const modifiedAGI = calculateModifiedAGI(data);
   const { range, limit, catchupContribution } = FED_TAX.rothIRAMaxContribution;
   const { low, high } = range[data.status];
@@ -115,7 +129,7 @@ function rothIRALimit(data: MyForm) {
   };
 }
 
-function hsaLimit(data: MyForm) {
+function hsaLimit(data: { status: TaxStatus; age: Age }) {
   const catchupContribution = FED_TAX.hsaMaxContribution.catchupContribution;
   const contribution = FED_TAX.hsaMaxContribution.contribution[data.status];
   return data.age == ">= 55"
@@ -175,12 +189,23 @@ function Inner({
     saveToLocalStorage(data);
   };
 
-  const currentHsa = form.watch("hsaContribution");
-  const maxHsa = hsaLimit(form.getValues());
-  const isHsaMax = currentHsa == maxHsa;
+  const status = form.watch("status");
+  const age = form.watch("age");
+  const salary = form.watch("salary");
+  const fourOhOneK = form.watch("fourOhOneK");
 
+  const maxHsa = hsaLimit({ status, age });
+  const hsaContribution = form.watch("hsaContribution");
+  const isHsaMax = hsaContribution == maxHsa;
+
+  const maxRoth = rothIRALimit({
+    salary,
+    hsaContribution,
+    fourOhOneK,
+    status,
+    age,
+  });
   const currentRoth = form.watch("rothIRAContribution");
-  const maxRoth = rothIRALimit(form.watch());
   const isRothMax = currentRoth == maxRoth.maxRoth;
 
   return (
@@ -254,9 +279,7 @@ function Inner({
                   size={null}
                   title="Set to max"
                   disabled={isHsaMax}
-                  onClick={() =>
-                    form.setValue("hsaContribution", hsaLimit(form.getValues()))
-                  }
+                  onClick={() => form.setValue("hsaContribution", maxHsa)}
                 >
                   {isHsaMax ? "Max" : "(not max)"}
                 </Button>
@@ -278,10 +301,7 @@ function Inner({
                   title="Set to max"
                   disabled={isRothMax}
                   onClick={() =>
-                    form.setValue(
-                      "rothIRAContribution",
-                      rothIRALimit(form.getValues()).maxRoth,
-                    )
+                    form.setValue("rothIRAContribution", maxRoth.maxRoth)
                   }
                 >
                   {isRothMax ? "Max" : "(not max)"}
