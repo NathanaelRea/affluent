@@ -90,7 +90,7 @@ export type FedTax = {
 export type StateInfo = {
   abbreviation: string;
 };
-export const states: Record<State, StateInfo> = {
+export const STATE_INFO: Record<State, StateInfo> = {
   Pennsylvania: {
     abbreviation: "PA",
   },
@@ -132,7 +132,7 @@ export const states: Record<State, StateInfo> = {
 type CityInfo = {
   state: State;
 };
-export const cities: Record<City, CityInfo> = {
+export const CITY_INFO: Record<City, CityInfo> = {
   Austin: {
     state: "Texas",
   },
@@ -190,7 +190,7 @@ export type IdName = {
   id: string;
   name: string;
 };
-export const categories = [
+export const CATEGORIES = [
   "Housing",
   "Transportation",
   "Grocery",
@@ -198,8 +198,9 @@ export const categories = [
   "Healthcare",
   "Miscellaneous",
 ] as const;
-export type Category = (typeof categories)[number];
-export const categoryScheama = z.enum(categories);
+export type Category = (typeof CATEGORIES)[number];
+export const categoryScheama = z.enum(CATEGORIES);
 
-export const ages = ["< 50", ">= 50, < 55", ">= 55"] as const;
-export const agesSchema = z.enum(ages);
+export const AGES = ["< 50", ">= 50, < 55", ">= 55"] as const;
+export type Age = (typeof AGES)[number];
+export const agesSchema = z.enum(AGES);

@@ -1,7 +1,7 @@
 import { ReactNode } from "react";
 import { ColumnDef } from "@tanstack/react-table";
 import { z } from "zod";
-import { categories, Category, categoryScheama } from "@/data";
+import { CATEGORIES, Category, categoryScheama } from "@/data";
 import { Input } from "@/components/ui/input";
 import { InputWithFormat } from "@/components/InputRHF";
 import {
@@ -30,14 +30,14 @@ const categoryIcons: Record<Category, ReactNode> = {
   Miscellaneous: <Box className="h-4" />,
 };
 
-export const expensesSchema = z.object({
+export const expenseSchema = z.object({
   name: z.string(),
   category: categoryScheama,
   amount: z.coerce.number(),
 });
-export type Expenses = z.infer<typeof expensesSchema>;
+export type Expense = z.infer<typeof expenseSchema>;
 
-export const expenseColumns: ColumnDef<Expenses>[] = [
+export const expenseColumns: ColumnDef<Expense>[] = [
   {
     accessorKey: "name",
     header: "Item",
@@ -74,7 +74,7 @@ export const expenseColumns: ColumnDef<Expenses>[] = [
             </div>
           </SelectTrigger>
           <SelectContent>
-            {categories.map((c) => (
+            {CATEGORIES.map((c) => (
               <SelectItem value={c} key={c}>
                 {c}
               </SelectItem>
