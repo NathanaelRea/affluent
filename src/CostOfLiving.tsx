@@ -442,7 +442,7 @@ function Results({
 
   const checkHousingRatio = useCallback(() => {
     if (customHousing) return;
-    const MAX_RATIO = 3;
+    const MAX_RATIO = 2.5;
     const rent1 = getRent(data.expenses);
     const rent2 = getRent(convertedData.expenses);
     const ratio = rent1 / rent2;
