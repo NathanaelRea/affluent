@@ -432,13 +432,17 @@ function Results({
       ...data,
       customHousing: { ...data.customHousing, [remoteCity]: customHousing },
     };
+    // dumb
+    if (!customHousing) {
+      delete n.customHousing[remoteCity];
+    }
     handleSubmit(n);
     return n;
   }, [data, remoteCity, customHousing]);
   const convertedData = convertCOLAndFindSalary(newData, remoteCity);
   const resultsRef = useRef<HTMLDivElement>(null);
 
-  const check = useCallback(() => {
+  const checkHousingRatio = useCallback(() => {
     if (customHousing) return;
     const MAX_RATIO = 3;
     const rent1 = getRent(data.expenses);
@@ -450,7 +454,7 @@ function Results({
       );
     }
   }, [customHousing]);
-  check();
+  checkHousingRatio();
 
   function handleCity(c: City) {
     setRemoteCity(c);
