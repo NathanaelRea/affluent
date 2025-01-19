@@ -153,7 +153,6 @@ const DEFAULT_VALUES: CostOfLiving = {
   afterTaxInvestments: 0,
   expenses: [
     { name: "Rent", amount: 1_000, category: "Housing" },
-    { name: "Renter's Insurance", amount: 10, category: "Housing" },
     { name: "Food", amount: 300, category: "Grocery" },
     { name: "Utilities", amount: 100, category: "Utilities" },
     { name: "Car", amount: 500, category: "Transportation" },
