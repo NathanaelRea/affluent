@@ -15,10 +15,9 @@ import {
   ChartTooltipContent,
 } from "./components/ui/chart";
 import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from "recharts";
-import { CircleHelpIcon, PlusIcon } from "lucide-react";
-import { toast } from "sonner";
+import { MinusIcon, PlusIcon } from "lucide-react";
 import {
-  cities,
+  CITY_INFO,
   Tax,
   TAX_STATUS,
   TaxStatus,
@@ -27,19 +26,20 @@ import {
   City,
   Category,
   CITIES,
-  states,
-  ages,
+  STATE_INFO,
+  AGES,
   agesSchema,
   Age,
 } from "./data";
-import { expensesSchema } from "./components/tables/expenses/columns";
+import { Expense, expenseSchema } from "./components/tables/expenses/columns";
 import { DataTable } from "./components/tables/basic-table";
 import { expenseColumns } from "./components/tables/expenses/columns";
 import { FED_TAX, CITY_TAX, STATE_TAX, COST_OF_LIVING } from "./data2024";
-import { InputRHF } from "./components/InputRHF";
+import { InputRHF, InputWithFormat } from "./components/InputRHF";
 import { ComboboxRHF } from "./components/ComboboxRHF";
 import { SelectRHF } from "./components/SelectRHF";
 import ErrorMessage from "./components/ErrorMessage";
+import { TooltipHelp } from "./components/TooltipHelp";
 
 const formSchema = z
   .object({
@@ -51,7 +51,8 @@ const formSchema = z
     hsaContribution: z.coerce.number(),
     rothIRAContribution: z.coerce.number(),
     afterTaxInvestments: z.coerce.number(),
-    expenses: z.array(expensesSchema),
+    expenses: z.array(expenseSchema),
+    customHousing: z.record(citySchema, z.number()),
   })
   .superRefine((data, ctx) => {
     const rothLimit = rothIRALimit(data);
@@ -157,9 +158,10 @@ const DEFAULT_VALUES: MyForm = {
     { name: "Entertainment", amount: 100, category: "Miscellaneous" },
     { name: "Misc", amount: 100, category: "Miscellaneous" },
   ],
+  customHousing: {},
 };
 
-export default function CostOfLiving() {
+export default function CostOfLivingWrapped() {
   const defaultValues = loadFromLocalStorage()?.data ?? DEFAULT_VALUES;
 
   function resetDefaults() {
@@ -167,10 +169,12 @@ export default function CostOfLiving() {
     window.location.reload(); // this is kinda dumb
   }
 
-  return <Inner defaultValues={defaultValues} resetDefaults={resetDefaults} />;
+  return (
+    <CostOfLiving defaultValues={defaultValues} resetDefaults={resetDefaults} />
+  );
 }
 
-function Inner({
+function CostOfLiving({
   defaultValues,
   resetDefaults,
 }: {
@@ -184,10 +188,10 @@ function Inner({
     defaultValues,
   });
 
-  const onSubmit = (data: MyForm) => {
+  function onSubmit(data: MyForm) {
     setData(data);
     saveToLocalStorage(data);
-  };
+  }
 
   const status = form.watch("status");
   const age = form.watch("age");
@@ -235,7 +239,7 @@ function Inner({
             formKey="city"
             label="City"
             items={CITIES.map((c) => ({
-              label: `${c}, ${states[cities[c].state].abbreviation}`,
+              label: `${c}, ${STATE_INFO[CITY_INFO[c].state].abbreviation}`,
               value: c,
             }))}
           />
@@ -243,17 +247,11 @@ function Inner({
             form={form}
             formKey="age"
             label={
-              <div className="flex gap-1 items-center">
+              <TooltipHelp text="Used to determine max Roth/HSA contribution">
                 Age
-                <div
-                  title="Used to determine max Roth/HSA contribution"
-                  className="cursor-pointer text-muted-foreground"
-                >
-                  <CircleHelpIcon className="h-3" />
-                </div>
-              </div>
+              </TooltipHelp>
             }
-            items={ages.map((c) => ({
+            items={AGES.map((c) => ({
               label: c,
               value: c,
             }))}
@@ -407,8 +405,36 @@ function loadFromLocalStorage(): MyFormWrapped | undefined {
 
 function Results({ data }: { data: MyForm }) {
   const [remoteCity, setRemoteCity] = useState<City>("San Francisco");
-  const convertedData = convertCOLAndFindSalary(data, remoteCity);
+  const [customHousing, setCustomHousing] = useState<number | undefined>(
+    data.customHousing[remoteCity],
+  );
+  const newData = {
+    ...data,
+    customHousing: { ...data.customHousing, [remoteCity]: customHousing },
+  };
+  const convertedData = convertCOLAndFindSalary(newData, remoteCity);
   const resultsRef = useRef<HTMLDivElement>(null);
+  const customHousingRef = useRef<HTMLInputElement>(null);
+
+  function handleCity(c: City) {
+    setRemoteCity(c);
+    setCustomHousing(data.customHousing[c]);
+  }
+
+  function addCustomHousing() {
+    const currentRent = data.expenses.reduce((acc, val) => {
+      if (val.category == "Housing") {
+        return Math.max(acc, val.amount);
+      }
+      return acc;
+    }, 0);
+    setCustomHousing(currentRent);
+    customHousingRef.current?.focus();
+  }
+
+  function removeCustomHousing() {
+    setCustomHousing(undefined);
+  }
 
   useEffect(() => {
     if (resultsRef.current) {
@@ -416,41 +442,61 @@ function Results({ data }: { data: MyForm }) {
     }
   }, []);
 
-  useEffect(() => {
-    const roth1 = data.rothIRAContribution;
-    const roth2 = convertedData.rothIRAContribution;
-    const baseMessage = `Roth IRA contribution has been adjusted from ${formatMoney(
-      roth1,
-    )} to ${formatMoney(roth2)}.`;
-    if (roth1 > roth2) {
-      toast.warning(
-        `${baseMessage} The excess is assumed to be moved into after tax investments.`,
-      );
-    } else if (roth1 < roth2) {
-      toast.warning(
-        `${baseMessage} A lower salary could restore your full Roth IRA eligability.`,
-      );
-    }
-  }, [data.rothIRAContribution, convertedData]);
-
   return (
     <div className="flex flex-col gap-2" ref={resultsRef}>
-      <div className="flex justify-between items-end">
-        <div className="flex flex-col gap-2 items-end text-nowrap">
-          <span className="text-sm text-muted-foreground">Required Income</span>
-          <h2 className="text-2xl">{formatMoney(convertedData.salary)}</h2>
+      <div className="flex justify-center">
+        <div className="w-full max-w-xs flex flex-col gap-4">
+          <label>Comparison City</label>
+          <div>
+            <Combobox
+              name="city"
+              items={CITIES.map((c) => ({
+                label: `${c}, ${STATE_INFO[CITY_INFO[c].state].abbreviation}`,
+                value: c,
+              }))}
+              value={remoteCity}
+              setValue={(c) => handleCity(c as City)}
+            />
+          </div>
+          <div className="flex flex-col">
+            <label>
+              <TooltipHelp text="There could be a 5x cost of living adjustment for housing (e.g. Pittsburgh <-> Manhattan), however in that case you will probably upsize/downsize.">
+                Custom City Housing
+              </TooltipHelp>
+            </label>
+            {customHousing ? (
+              <div className="flex gap-2 items-center">
+                <InputWithFormat
+                  value={customHousing}
+                  onChange={(v) => setCustomHousing(v)}
+                  onBlur={() => {}}
+                  type="money"
+                />
+                <Button
+                  type="button"
+                  variant={"outline"}
+                  size="sm"
+                  onClick={removeCustomHousing}
+                >
+                  <MinusIcon />
+                </Button>
+              </div>
+            ) : (
+              <Button
+                type="button"
+                variant={"outline"}
+                size="sm"
+                onClick={addCustomHousing}
+              >
+                <PlusIcon />
+              </Button>
+            )}
+          </div>
         </div>
-        <div>
-          <Combobox
-            name="city"
-            items={CITIES.map((c) => ({
-              label: `${c}, ${states[cities[c].state].abbreviation}`,
-              value: c,
-            }))}
-            value={remoteCity}
-            setValue={(c) => setRemoteCity(c as City)}
-          />
-        </div>
+      </div>
+      <div className="flex flex-col items-end">
+        <span className="text-sm text-muted-foreground">Required Income</span>
+        <h2 className="text-2xl">{formatMoney(convertedData.salary)}</h2>
       </div>
       <OverviewChart localData={data} remoteData={convertedData} />
       <ExpensesChart localData={data} remoteData={convertedData} />
@@ -468,10 +514,7 @@ function convertCOLAndFindSalary(data: MyForm, remoteCity: City): MyForm {
   const newData: MyForm = {
     ...dataNoAfterTax,
     city: remoteCity,
-    expenses: data.expenses.map((e) => ({
-      ...e,
-      amount: convertCostOfLiving(e.amount, data.city, remoteCity, e.category),
-    })),
+    expenses: parseExpenses(data, remoteCity),
   };
 
   const localNetTakeHomePay =
@@ -487,6 +530,38 @@ function convertCOLAndFindSalary(data: MyForm, remoteCity: City): MyForm {
   newData.rothIRAContribution = Math.min(localAfterTax, newRothLimit);
   newData.afterTaxInvestments = localAfterTax - newData.rothIRAContribution;
   return newData;
+}
+
+function parseExpenses(data: MyForm, remoteCity: City) {
+  const newExpenses = data.expenses.map((e) => ({
+    ...e,
+    amount: convertCostOfLiving(e.amount, data.city, remoteCity, e.category),
+  }));
+  const customHousing = data.customHousing[remoteCity];
+  if (!customHousing) {
+    return newExpenses;
+  }
+
+  const housing: Expense[] = [];
+  const nonHousing: Expense[] = [];
+  for (const e of newExpenses) {
+    if (e.category == "Housing") {
+      housing.push(e);
+    } else {
+      nonHousing.push(e);
+    }
+  }
+  housing.sort((a, b) => b.amount - a.amount);
+  if (housing[0]) {
+    housing[0] = { ...housing[0], amount: customHousing };
+  } else {
+    housing.push({
+      name: "Housing",
+      category: "Housing",
+      amount: customHousing,
+    });
+  }
+  return [...housing, ...nonHousing];
 }
 
 function blackBox(formBase: MyForm, localNetTakeHomePay: number) {
@@ -668,7 +743,7 @@ function convertCostOfLiving(
 function calculateNetTakeHomePay(data: MyForm) {
   const fedRate = FED_TAX.rates;
   const city = data.city;
-  const state = cities[city].state;
+  const state = CITY_INFO[city].state;
   const cityRate = CITY_TAX[city];
   const stateRate = STATE_TAX[state];
 

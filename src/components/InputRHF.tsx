@@ -118,6 +118,13 @@ export function InputWithFormat({
     setInputValue(e.target.value);
   };
 
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter") {
+      const numericValue = parseValue(inputValue, type);
+      onChange(numericValue);
+    }
+  };
+
   return (
     <Input
       type="text"
@@ -125,6 +132,7 @@ export function InputWithFormat({
       onFocus={handleFocus}
       onBlur={handleBlur}
       onChange={handleChange}
+      onKeyDown={handleKeyDown}
       placeholder={placeholder}
     />
   );
