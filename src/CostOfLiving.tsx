@@ -469,8 +469,8 @@ function Results({
   }
 
   function addCustomHousing() {
-    const currentRent = getRent(data.expenses);
-    setCustomHousing(currentRent);
+    const remoteRent = getRent(convertedData.expenses);
+    setCustomHousing(Math.round(remoteRent));
   }
 
   function removeCustomHousing() {
