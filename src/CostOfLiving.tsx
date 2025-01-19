@@ -274,20 +274,18 @@ function CostOfLiving({
             form={form}
             formKey="hsaContribution"
             label={
-              <>
+              <div className="flex items-center gap-2">
                 HSA
                 <Button
-                  className="text-xs py-0 p-0 px-2"
+                  className="text-xs py-0 p-0 px-1"
                   type="button"
-                  variant="ghost"
                   size={null}
-                  title="Set to max"
                   disabled={isHsaMax}
                   onClick={() => form.setValue("hsaContribution", maxHsa)}
                 >
-                  {isHsaMax ? "Max" : "(not max)"}
+                  {isHsaMax ? "Max" : "set to max"}
                 </Button>
-              </>
+              </div>
             }
             type="money"
           />
@@ -295,22 +293,20 @@ function CostOfLiving({
             form={form}
             formKey="rothIRAContribution"
             label={
-              <>
+              <div className="flex items-center gap-2">
                 Roth IRA
                 <Button
-                  className="text-xs py-0 p-0 px-2"
+                  className="text-xs py-0 p-0 px-1"
                   type="button"
-                  variant="ghost"
                   size={null}
-                  title="Set to max"
                   disabled={isRothMax}
                   onClick={() =>
                     form.setValue("rothIRAContribution", maxRoth.maxRoth)
                   }
                 >
-                  {isRothMax ? "Max" : "(not max)"}
+                  {isRothMax ? "Max" : "set to max"}
                 </Button>
-              </>
+              </div>
             }
             type="money"
           />
