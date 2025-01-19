@@ -223,7 +223,7 @@ function CostOfLiving({
       <Form {...form}>
         <form
           onSubmit={form.handleSubmit(onSubmit)}
-          className="grid grid-cols-2 gap-4 py-8"
+          className="grid grid-cols-1 md:grid-cols-2 gap-4 py-8"
         >
           <ComboboxRHF
             form={form}
@@ -256,7 +256,6 @@ function CostOfLiving({
               value: c,
             }))}
           />
-          <div />
           <InputRHF form={form} formKey="salary" label="Salary" type="money" />
           <InputRHF
             form={form}
@@ -314,7 +313,7 @@ function CostOfLiving({
             label="After tax investments"
             type="money"
           />
-          <div className="col-span-2">
+          <div className="md:col-span-2">
             <DataTable
               data={form.watch("expenses")}
               columns={expenseColumns}
@@ -357,7 +356,7 @@ function CostOfLiving({
             </Button>
           </div>
           <ErrorMessage message={form.formState.errors?.expenses?.message} />
-          <div className="flex items-center justify-between col-span-2">
+          <div className="flex items-center justify-between md:col-span-2">
             <Button variant="outline" onClick={resetDefaults} type="button">
               Reset
             </Button>
@@ -444,8 +443,8 @@ function Results({ data }: { data: MyForm }) {
 
   return (
     <div className="flex flex-col gap-2" ref={resultsRef}>
-      <div className="flex justify-center">
-        <div className="w-full max-w-xs flex flex-col gap-4">
+      <div className="flex justify-center w-full">
+        <div className="w-full md:w-1/2 flex flex-col gap-4">
           <label>Comparison City</label>
           <div>
             <Combobox
