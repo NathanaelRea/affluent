@@ -3,7 +3,7 @@ import { Form } from "./components/ui/form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { formatMoney, secantMethod } from "./lib/utils";
 import { Combobox } from "./components/combobox";
 import {
@@ -42,7 +42,7 @@ import ErrorMessage from "./components/ErrorMessage";
 import { TooltipHelp } from "./components/TooltipHelp";
 import { toast } from "sonner";
 
-const formSchema = z
+const costOfLivingSchema = z
   .object({
     city: citySchema,
     status: taxStatusSchema,
@@ -106,6 +106,7 @@ function calculateModifiedAGI(data: {
     data.salary * data.fourOhOneK
   );
 }
+
 function rothIRALimit(data: {
   salary: number;
   hsaContribution: number;
@@ -139,9 +140,9 @@ function hsaLimit(data: { status: TaxStatus; age: Age }) {
     : contribution;
 }
 
-type MyForm = z.infer<typeof formSchema>;
+type CostOfLiving = z.infer<typeof costOfLivingSchema>;
 
-const DEFAULT_VALUES: MyForm = {
+const DEFAULT_VALUES: CostOfLiving = {
   city: "Philadelphia",
   status: "Single",
   salary: 100_000,
@@ -179,19 +180,25 @@ function CostOfLiving({
   defaultValues,
   resetDefaults,
 }: {
-  defaultValues: MyForm | undefined;
+  defaultValues: CostOfLiving | undefined;
   resetDefaults: () => void;
 }) {
-  const [data, setData] = useState<MyForm | undefined>();
+  const [data, setData] = useState<CostOfLiving | undefined>();
 
-  const form = useForm<MyForm>({
-    resolver: zodResolver(formSchema),
+  const form = useForm<CostOfLiving>({
+    resolver: zodResolver(costOfLivingSchema),
     defaultValues,
   });
 
-  function onSubmit(data: MyForm) {
+  function onSubmit(data: CostOfLiving) {
     setData(data);
     saveToLocalStorage(data);
+  }
+
+  function handleSubmit(maybeData: unknown) {
+    // is this bad? goes around RHF?
+    const data = costOfLivingSchema.parse(maybeData);
+    onSubmit(data);
   }
 
   const status = form.watch("status");
@@ -367,7 +374,7 @@ function CostOfLiving({
           </div>
         </form>
       </Form>
-      {data && <Results data={data} />}
+      {data && <Results data={data} handleSubmit={handleSubmit} />}
     </>
   );
 }
@@ -381,40 +388,55 @@ function createLocalStorageWrapperSchema<T extends z.ZodTypeAny>(schema: T) {
   });
 }
 
-const formWrapped = createLocalStorageWrapperSchema(formSchema);
-type MyFormWrapped = z.infer<typeof formWrapped>;
+const costOfLivingWrapped = createLocalStorageWrapperSchema(costOfLivingSchema);
+type CostOfLivingWrapped = z.infer<typeof costOfLivingWrapped>;
 
-function saveToLocalStorage(data: MyForm) {
+function saveToLocalStorage(data: CostOfLiving) {
   try {
-    const dataWrapped = formWrapped.parse({ version: 1, data });
+    const dataWrapped = costOfLivingWrapped.parse({ version: 1, data });
     localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(dataWrapped));
   } catch {
     console.error("Failed to save to local storage");
   }
 }
 
-function loadFromLocalStorage(): MyFormWrapped | undefined {
+function loadFromLocalStorage(): CostOfLivingWrapped | undefined {
   try {
     const rawData = localStorage.getItem(LOCAL_STORAGE_KEY);
     if (!rawData) return undefined;
-    return formWrapped.parse(JSON.parse(rawData));
+    return costOfLivingWrapped.parse(JSON.parse(rawData));
   } catch {
     return undefined;
   }
 }
 
-function Results({ data }: { data: MyForm }) {
+function Results({
+  data,
+  handleSubmit,
+}: {
+  data: CostOfLiving;
+  handleSubmit: (_: unknown) => void;
+}) {
   const [remoteCity, setRemoteCity] = useState<City>("San Francisco");
   const [customHousing, setCustomHousing] = useState<number | undefined>(
     data.customHousing[remoteCity],
   );
-  const newData = {
-    ...data,
-    customHousing: { ...data.customHousing, [remoteCity]: customHousing },
-  };
+  const newData = useMemo(() => {
+    // this kinda sucks
+    console.log("NEW DATA MEMO");
+    if (data.customHousing[remoteCity] == customHousing) {
+      console.log("E RET");
+      return data;
+    }
+    const n = {
+      ...data,
+      customHousing: { ...data.customHousing, [remoteCity]: customHousing },
+    };
+    handleSubmit(n);
+    return n;
+  }, [data, remoteCity, customHousing]);
   const convertedData = convertCOLAndFindSalary(newData, remoteCity);
   const resultsRef = useRef<HTMLDivElement>(null);
-  const customHousingRef = useRef<HTMLInputElement>(null);
 
   const check = useCallback(() => {
     if (customHousing) return;
@@ -447,7 +469,6 @@ function Results({ data }: { data: MyForm }) {
   function addCustomHousing() {
     const currentRent = getRent(data.expenses);
     setCustomHousing(currentRent);
-    customHousingRef.current?.focus();
   }
 
   function removeCustomHousing() {
@@ -522,14 +543,17 @@ function Results({ data }: { data: MyForm }) {
   );
 }
 
-function convertCOLAndFindSalary(data: MyForm, remoteCity: City): MyForm {
+function convertCOLAndFindSalary(
+  data: CostOfLiving,
+  remoteCity: City,
+): CostOfLiving {
   const localAfterTax = data.rothIRAContribution + data.afterTaxInvestments;
-  const dataNoAfterTax: MyForm = {
+  const dataNoAfterTax: CostOfLiving = {
     ...data,
     rothIRAContribution: 0,
     afterTaxInvestments: 0,
   };
-  const newData: MyForm = {
+  const newData: CostOfLiving = {
     ...dataNoAfterTax,
     city: remoteCity,
     expenses: parseExpenses(data, remoteCity),
@@ -550,7 +574,7 @@ function convertCOLAndFindSalary(data: MyForm, remoteCity: City): MyForm {
   return newData;
 }
 
-function parseExpenses(data: MyForm, remoteCity: City) {
+function parseExpenses(data: CostOfLiving, remoteCity: City) {
   const newExpenses = data.expenses.map((e) => ({
     ...e,
     amount: convertCostOfLiving(e.amount, data.city, remoteCity, e.category),
@@ -582,7 +606,7 @@ function parseExpenses(data: MyForm, remoteCity: City) {
   return [...housing, ...nonHousing];
 }
 
-function blackBox(formBase: MyForm, localNetTakeHomePay: number) {
+function blackBox(formBase: CostOfLiving, localNetTakeHomePay: number) {
   return (x: number) => {
     const newForm = {
       ...formBase,
@@ -609,8 +633,8 @@ function ExpensesChart({
   localData,
   remoteData,
 }: {
-  localData: MyForm;
-  remoteData: MyForm;
+  localData: CostOfLiving;
+  remoteData: CostOfLiving;
 }) {
   const chartData = localData.expenses.map((expense, index) => ({
     name: expense.name,
@@ -656,8 +680,8 @@ function OverviewChart({
   localData,
   remoteData,
 }: {
-  localData: MyForm;
-  remoteData: MyForm;
+  localData: CostOfLiving;
+  remoteData: CostOfLiving;
 }) {
   const localTaxes = calculateNetTakeHomePay(localData);
   const remoteTaxes = calculateNetTakeHomePay(remoteData);
@@ -758,7 +782,7 @@ function convertCostOfLiving(
   return value * (remoteCOL / localCOL);
 }
 
-function calculateNetTakeHomePay(data: MyForm) {
+function calculateNetTakeHomePay(data: CostOfLiving) {
   const fedRate = FED_TAX.rates;
   const city = data.city;
   const state = CITY_INFO[city].state;
