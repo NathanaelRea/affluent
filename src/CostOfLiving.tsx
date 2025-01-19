@@ -3,7 +3,7 @@ import { Form } from "./components/ui/form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { formatMoney, secantMethod } from "./lib/utils";
 import { Combobox } from "./components/combobox";
 import {
@@ -40,6 +40,7 @@ import { ComboboxRHF } from "./components/ComboboxRHF";
 import { SelectRHF } from "./components/SelectRHF";
 import ErrorMessage from "./components/ErrorMessage";
 import { TooltipHelp } from "./components/TooltipHelp";
+import { toast } from "sonner";
 
 const formSchema = z
   .object({
@@ -415,18 +416,36 @@ function Results({ data }: { data: MyForm }) {
   const resultsRef = useRef<HTMLDivElement>(null);
   const customHousingRef = useRef<HTMLInputElement>(null);
 
+  const check = useCallback(() => {
+    if (customHousing) return;
+    const MAX_RATIO = 3;
+    const rent1 = getRent(data.expenses);
+    const rent2 = getRent(convertedData.expenses);
+    const ratio = rent1 / rent2;
+    if (ratio >= MAX_RATIO || 1 / ratio >= MAX_RATIO) {
+      toast.warning(
+        `Cost of living adjustment for housing exceeds ${MAX_RATIO}x. To downsize/rightsize, set custom city housing.`,
+      );
+    }
+  }, [customHousing]);
+  check();
+
   function handleCity(c: City) {
     setRemoteCity(c);
     setCustomHousing(data.customHousing[c]);
   }
 
-  function addCustomHousing() {
-    const currentRent = data.expenses.reduce((acc, val) => {
+  function getRent(expenses: Expense[]) {
+    return expenses.reduce((acc, val) => {
       if (val.category == "Housing") {
         return Math.max(acc, val.amount);
       }
       return acc;
     }, 0);
+  }
+
+  function addCustomHousing() {
+    const currentRent = getRent(data.expenses);
     setCustomHousing(currentRent);
     customHousingRef.current?.focus();
   }
@@ -459,7 +478,7 @@ function Results({ data }: { data: MyForm }) {
           </div>
           <div className="flex flex-col">
             <label>
-              <TooltipHelp text="There could be a 5x cost of living adjustment for housing (e.g. Pittsburgh <-> Manhattan), however in that case you will probably upsize/downsize.">
+              <TooltipHelp text="There could be a 5x cost of living adjustment for housing (e.g. Pittsburgh <-> Manhattan), however in that case you will probably downsize/rightsize.">
                 Custom City Housing
               </TooltipHelp>
             </label>
