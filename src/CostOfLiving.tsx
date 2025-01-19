@@ -423,9 +423,7 @@ function Results({
   );
   const newData = useMemo(() => {
     // this kinda sucks
-    console.log("NEW DATA MEMO");
     if (data.customHousing[remoteCity] == customHousing) {
-      console.log("E RET");
       return data;
     }
     const n = {
