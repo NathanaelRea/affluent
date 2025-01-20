@@ -41,7 +41,6 @@ import { SelectRHF } from "./components/SelectRHF";
 import ErrorMessage from "./components/ErrorMessage";
 import { TooltipHelp } from "./components/TooltipHelp";
 import { toast } from "sonner";
-import { format } from "path/win32";
 
 const costOfLivingSchema = z
   .object({
