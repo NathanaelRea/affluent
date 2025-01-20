@@ -283,7 +283,7 @@ function CostOfLiving({
             form={form}
             formKey="hsaContribution"
             label={
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 py-1">
                 HSA
                 <Button
                   className="text-xs py-0 p-0 px-1"
@@ -302,7 +302,7 @@ function CostOfLiving({
             form={form}
             formKey="rothIRAContribution"
             label={
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 py-1">
                 Roth IRA
                 <Button
                   className="text-xs py-0 p-0 px-1"
