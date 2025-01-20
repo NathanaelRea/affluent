@@ -154,10 +154,12 @@ const DEFAULT_VALUES: CostOfLiving = {
   expenses: [
     { name: "Rent", amount: 1_000, category: "Housing" },
     { name: "Food", amount: 300, category: "Grocery" },
-    { name: "Utilities", amount: 100, category: "Utilities" },
+    { name: "Resturaunt", amount: 300, category: "Grocery" },
+    { name: "Utilities", amount: 75, category: "Utilities" },
     { name: "Car", amount: 500, category: "Transportation" },
-    { name: "Entertainment", amount: 100, category: "Miscellaneous" },
-    { name: "Misc", amount: 100, category: "Miscellaneous" },
+    { name: "Entertainment", amount: 500, category: "Miscellaneous" },
+    { name: "Travel", amount: 500, category: "Miscellaneous" },
+    { name: "Misc", amount: 500, category: "Miscellaneous" },
   ],
   customHousing: {},
 };
