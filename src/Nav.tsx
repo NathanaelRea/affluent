@@ -15,9 +15,11 @@ export default function Layout() {
     <div className="flex flex-col h-full min-h-screen">
       <nav className="border-b-2 border-cyan-900 flex justify-center py-2 px-6">
         <div className="flex justify-between items-center max-w-2xl w-full">
-          <span className="font-semibold text-lg text-transparent bg-clip-text bg-gradient-to-r from-emerald-500 to-sky-500">
-            Affluent
-          </span>
+          <NavLink to="/">
+            <span className="font-semibold text-lg text-transparent bg-clip-text bg-gradient-to-r from-emerald-500 to-sky-500">
+              Affluent
+            </span>
+          </NavLink>
           <NavMenu />
         </div>
       </nav>
@@ -52,13 +54,13 @@ type Component = {
 const components: Component[] = [
   {
     title: "Cost of Living",
-    href: "/",
+    href: "/cost-of-living",
     description:
       "Calculate the cost of living change with tax and itemized expenses.",
   },
   {
     title: "Monete Carlo SWR",
-    href: "/monte",
+    href: "/monte-carlo-swr",
     description: "Simulate a portfolio with custom funds and withdraw rate.",
   },
 ];
