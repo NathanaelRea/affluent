@@ -435,6 +435,7 @@ function Results({
     return n;
   }, [data, remoteCity, customHousing]);
   const convertedData = convertCOLAndFindSalary(newData, remoteCity);
+  const netTakeHome = calculateNetTakeHomePay(data).netTakeHome;
   const resultsRef = useRef<HTMLDivElement>(null);
 
   const checkHousingRatio = useCallback(() => {
@@ -443,7 +444,7 @@ function Results({
     const rent1 = getRent(data.expenses);
     const rent2 = getRent(convertedData.expenses);
     const ratio = rent1 / rent2;
-    if (ratio >= MAX_RATIO || 1 / ratio >= MAX_RATIO) {
+    if (ratio >= MAX_RATIO || 1 >= ratio * MAX_RATIO) {
       toast.warning(
         `Cost of living adjustment for housing exceeds ${MAX_RATIO}x. To downsize/rightsize, set custom city housing.`,
       );
@@ -454,15 +455,6 @@ function Results({
   function handleCity(c: City) {
     setRemoteCity(c);
     setCustomHousing(data.customHousing[c]);
-  }
-
-  function getRent(expenses: Expense[]) {
-    return expenses.reduce((acc, val) => {
-      if (val.category == "Housing") {
-        return Math.max(acc, val.amount);
-      }
-      return acc;
-    }, 0);
   }
 
   function addCustomHousing() {
@@ -532,14 +524,27 @@ function Results({
           </div>
         </div>
       </div>
-      <div className="flex flex-col items-end">
+      <div className="flex flex-col items-end justify-end">
         <span className="text-sm text-muted-foreground">Required Income</span>
         <h2 className="text-2xl">{formatMoney(convertedData.salary)}</h2>
+        <p className="text-xs text-muted-foreground text-right">
+          To maintain the same net take home of {formatMoney(netTakeHome / 12)}
+          /mo
+        </p>
       </div>
       <OverviewChart localData={data} remoteData={convertedData} />
       <ExpensesChart localData={data} remoteData={convertedData} />
     </div>
   );
+}
+
+function getRent(expenses: Expense[]) {
+  return expenses.reduce((acc, val) => {
+    if (val.category == "Housing") {
+      return Math.max(acc, val.amount);
+    }
+    return acc;
+  }, 0);
 }
 
 function convertCOLAndFindSalary(
