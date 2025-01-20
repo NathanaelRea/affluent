@@ -41,6 +41,7 @@ import { SelectRHF } from "./components/SelectRHF";
 import ErrorMessage from "./components/ErrorMessage";
 import { TooltipHelp } from "./components/TooltipHelp";
 import { toast } from "sonner";
+import { format } from "path/win32";
 
 const costOfLivingSchema = z
   .object({
@@ -221,6 +222,13 @@ function CostOfLiving({
   const currentRoth = form.watch("rothIRAContribution");
   const isRothMax = currentRoth == maxRoth.maxRoth;
 
+  const expenses = form.watch("expenses");
+  // TODO look into not coercing so it's always number?
+  const totalMoExpenses = expenses.reduce(
+    (acc, val) => acc + Number(val.amount),
+    0,
+  );
+
   return (
     <>
       <h1 className="text-2xl">Cost of living in depth</h1>
@@ -320,7 +328,7 @@ function CostOfLiving({
           />
           <div className="md:col-span-2">
             <DataTable
-              data={form.watch("expenses")}
+              data={expenses}
               columns={expenseColumns}
               setValue={(name, value) => {
                 // this is kinda dumb
@@ -359,6 +367,9 @@ function CostOfLiving({
             >
               <PlusIcon />
             </Button>
+            <p className="text-sm text-muted-foreground text-right">
+              Total expenses: {formatMoney(totalMoExpenses)}/mo
+            </p>
           </div>
           <ErrorMessage message={form.formState.errors?.expenses?.message} />
           <div className="flex items-center justify-between md:col-span-2">
