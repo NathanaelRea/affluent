@@ -532,8 +532,24 @@ function Results({
           /mo
         </p>
       </div>
-      <OverviewChart localData={data} remoteData={convertedData} />
-      <ExpensesChart localData={data} remoteData={convertedData} />
+      <h3>Taxes</h3>
+      <MoneyBarChart
+        localCity={data.city}
+        remoteCity={convertedData.city}
+        chartData={calculateTaxesChartData(data, convertedData)}
+      />
+      <h3>Investments</h3>
+      <MoneyBarChart
+        localCity={data.city}
+        remoteCity={convertedData.city}
+        chartData={calculateInvestmentsChartData(data, convertedData)}
+      />
+      <h3>Expenses</h3>
+      <MoneyBarChart
+        localCity={data.city}
+        remoteCity={convertedData.city}
+        chartData={calculateExpensesChartData(data, convertedData)}
+      />
     </div>
   );
 }
@@ -633,81 +649,42 @@ function barChartConfig(localCity: City, remoteCity: City): ChartConfig {
   } satisfies ChartConfig;
 }
 
-function ExpensesChart({
-  localData,
-  remoteData,
-}: {
-  localData: CostOfLiving;
-  remoteData: CostOfLiving;
-}) {
-  const chartData = localData.expenses.map((expense, index) => ({
+function calculateExpensesChartData(
+  localData: CostOfLiving,
+  remoteData: CostOfLiving,
+) {
+  return localData.expenses.map((expense, index) => ({
     name: expense.name,
     local: expense.amount,
     remote: remoteData.expenses[index].amount,
   }));
-
-  return (
-    <ChartContainer
-      config={barChartConfig(localData.city, remoteData.city)}
-      className="w-full h-[200px]"
-    >
-      <BarChart accessibilityLayer data={chartData}>
-        <CartesianGrid vertical={false} />
-        <YAxis
-          tickLine={false}
-          tickMargin={10}
-          axisLine={false}
-          tickFormatter={formatMoney}
-        />
-        <XAxis
-          dataKey="name"
-          tickLine={false}
-          tickMargin={10}
-          axisLine={false}
-        />
-        <ChartTooltip
-          content={
-            <ChartTooltipContent
-              valueFormatter={(v) => formatMoney(Number(v))}
-            />
-          }
-        />
-        <ChartLegend content={<ChartLegendContent />} />
-        <Bar dataKey="local" fill="var(--color-local)" radius={4} />
-        <Bar dataKey="remote" fill="var(--color-remote)" radius={4} />
-      </BarChart>
-    </ChartContainer>
-  );
 }
 
-function OverviewChart({
-  localData,
-  remoteData,
-}: {
-  localData: CostOfLiving;
-  remoteData: CostOfLiving;
-}) {
+function calculateTaxesChartData(
+  localData: CostOfLiving,
+  remoteData: CostOfLiving,
+) {
   const localTaxes = calculateNetTakeHomePay(localData);
   const remoteTaxes = calculateNetTakeHomePay(remoteData);
 
-  const chartData = [
+  return [
     {
-      name: "Federal tax",
+      name: "Federal",
       local: localTaxes.fedTax,
       remote: remoteTaxes.fedTax,
     },
     {
-      name: "State tax",
+      name: "State",
       local: localTaxes.stateTax,
       remote: remoteTaxes.stateTax,
     },
     {
-      name: "City tax",
+      name: "City",
       local: localTaxes.cityTax,
       remote: remoteTaxes.cityTax,
     },
     {
-      name: "Social Security",
+      name: "Social",
       local: localTaxes.socialSecurity,
       remote: remoteTaxes.socialSecurity,
     },
@@ -716,6 +693,17 @@ function OverviewChart({
       local: localTaxes.medicare,
       remote: remoteTaxes.medicare,
     },
+  ];
+}
+
+function calculateInvestmentsChartData(
+  localData: CostOfLiving,
+  remoteData: CostOfLiving,
+) {
+  const localTaxes = calculateNetTakeHomePay(localData);
+  const remoteTaxes = calculateNetTakeHomePay(remoteData);
+
+  return [
     {
       name: "401(k)",
       local: localTaxes.fourOhOneK,
@@ -737,10 +725,25 @@ function OverviewChart({
       remote: remoteTaxes.afterTaxInvestments,
     },
   ];
+}
 
+type ChartData = {
+  name: string;
+  local: number;
+  remote: number;
+};
+function MoneyBarChart({
+  localCity,
+  remoteCity,
+  chartData,
+}: {
+  localCity: City;
+  remoteCity: City;
+  chartData: ChartData[];
+}) {
   return (
     <ChartContainer
-      config={barChartConfig(localData.city, remoteData.city)}
+      config={barChartConfig(localCity, remoteCity)}
       className="w-full h-[200px]"
     >
       <BarChart accessibilityLayer data={chartData}>
