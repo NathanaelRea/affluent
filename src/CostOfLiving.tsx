@@ -154,10 +154,12 @@ const DEFAULT_VALUES: CostOfLiving = {
   expenses: [
     { name: "Rent", amount: 1_000, category: "Housing" },
     { name: "Food", amount: 300, category: "Grocery" },
-    { name: "Utilities", amount: 100, category: "Utilities" },
+    { name: "Resturaunt", amount: 300, category: "Grocery" },
+    { name: "Utilities", amount: 75, category: "Utilities" },
     { name: "Car", amount: 500, category: "Transportation" },
-    { name: "Entertainment", amount: 100, category: "Miscellaneous" },
-    { name: "Misc", amount: 100, category: "Miscellaneous" },
+    { name: "Entertainment", amount: 500, category: "Miscellaneous" },
+    { name: "Travel", amount: 500, category: "Miscellaneous" },
+    { name: "Misc", amount: 500, category: "Miscellaneous" },
   ],
   customHousing: {},
 };
@@ -219,6 +221,13 @@ function CostOfLiving({
   const currentRoth = form.watch("rothIRAContribution");
   const isRothMax = currentRoth == maxRoth.maxRoth;
 
+  const expenses = form.watch("expenses");
+  // TODO look into not coercing so it's always number?
+  const totalMoExpenses = expenses.reduce(
+    (acc, val) => acc + Number(val.amount),
+    0,
+  );
+
   return (
     <>
       <h1 className="text-2xl">Cost of living in depth</h1>
@@ -274,7 +283,7 @@ function CostOfLiving({
             form={form}
             formKey="hsaContribution"
             label={
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 py-1">
                 HSA
                 <Button
                   className="text-xs py-0 p-0 px-1"
@@ -293,7 +302,7 @@ function CostOfLiving({
             form={form}
             formKey="rothIRAContribution"
             label={
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 py-1">
                 Roth IRA
                 <Button
                   className="text-xs py-0 p-0 px-1"
@@ -318,7 +327,7 @@ function CostOfLiving({
           />
           <div className="md:col-span-2">
             <DataTable
-              data={form.watch("expenses")}
+              data={expenses}
               columns={expenseColumns}
               setValue={(name, value) => {
                 // this is kinda dumb
@@ -357,6 +366,9 @@ function CostOfLiving({
             >
               <PlusIcon />
             </Button>
+            <p className="text-sm text-muted-foreground text-right">
+              Total expenses: {formatMoney(totalMoExpenses)}/mo
+            </p>
           </div>
           <ErrorMessage message={form.formState.errors?.expenses?.message} />
           <div className="flex items-center justify-between md:col-span-2">
@@ -433,6 +445,7 @@ function Results({
     return n;
   }, [data, remoteCity, customHousing]);
   const convertedData = convertCOLAndFindSalary(newData, remoteCity);
+  const netTakeHome = calculateNetTakeHomePay(data).netTakeHome;
   const resultsRef = useRef<HTMLDivElement>(null);
 
   const checkHousingRatio = useCallback(() => {
@@ -441,7 +454,7 @@ function Results({
     const rent1 = getRent(data.expenses);
     const rent2 = getRent(convertedData.expenses);
     const ratio = rent1 / rent2;
-    if (ratio >= MAX_RATIO || 1 / ratio >= MAX_RATIO) {
+    if (ratio >= MAX_RATIO || 1 >= ratio * MAX_RATIO) {
       toast.warning(
         `Cost of living adjustment for housing exceeds ${MAX_RATIO}x. To downsize/rightsize, set custom city housing.`,
       );
@@ -452,15 +465,6 @@ function Results({
   function handleCity(c: City) {
     setRemoteCity(c);
     setCustomHousing(data.customHousing[c]);
-  }
-
-  function getRent(expenses: Expense[]) {
-    return expenses.reduce((acc, val) => {
-      if (val.category == "Housing") {
-        return Math.max(acc, val.amount);
-      }
-      return acc;
-    }, 0);
   }
 
   function addCustomHousing() {
@@ -530,14 +534,43 @@ function Results({
           </div>
         </div>
       </div>
-      <div className="flex flex-col items-end">
+      <div className="flex flex-col items-end justify-end">
         <span className="text-sm text-muted-foreground">Required Income</span>
         <h2 className="text-2xl">{formatMoney(convertedData.salary)}</h2>
+        <p className="text-xs text-muted-foreground text-right">
+          To maintain the same net take home of {formatMoney(netTakeHome / 12)}
+          /mo
+        </p>
       </div>
-      <OverviewChart localData={data} remoteData={convertedData} />
-      <ExpensesChart localData={data} remoteData={convertedData} />
+      <h3>Taxes</h3>
+      <MoneyBarChart
+        localCity={data.city}
+        remoteCity={convertedData.city}
+        chartData={calculateTaxesChartData(data, convertedData)}
+      />
+      <h3>Investments</h3>
+      <MoneyBarChart
+        localCity={data.city}
+        remoteCity={convertedData.city}
+        chartData={calculateInvestmentsChartData(data, convertedData)}
+      />
+      <h3>Expenses</h3>
+      <MoneyBarChart
+        localCity={data.city}
+        remoteCity={convertedData.city}
+        chartData={calculateExpensesChartData(data, convertedData)}
+      />
     </div>
   );
+}
+
+function getRent(expenses: Expense[]) {
+  return expenses.reduce((acc, val) => {
+    if (val.category == "Housing") {
+      return Math.max(acc, val.amount);
+    }
+    return acc;
+  }, 0);
 }
 
 function convertCOLAndFindSalary(
@@ -626,81 +659,42 @@ function barChartConfig(localCity: City, remoteCity: City): ChartConfig {
   } satisfies ChartConfig;
 }
 
-function ExpensesChart({
-  localData,
-  remoteData,
-}: {
-  localData: CostOfLiving;
-  remoteData: CostOfLiving;
-}) {
-  const chartData = localData.expenses.map((expense, index) => ({
+function calculateExpensesChartData(
+  localData: CostOfLiving,
+  remoteData: CostOfLiving,
+) {
+  return localData.expenses.map((expense, index) => ({
     name: expense.name,
     local: expense.amount,
     remote: remoteData.expenses[index].amount,
   }));
-
-  return (
-    <ChartContainer
-      config={barChartConfig(localData.city, remoteData.city)}
-      className="w-full h-[200px]"
-    >
-      <BarChart accessibilityLayer data={chartData}>
-        <CartesianGrid vertical={false} />
-        <YAxis
-          tickLine={false}
-          tickMargin={10}
-          axisLine={false}
-          tickFormatter={formatMoney}
-        />
-        <XAxis
-          dataKey="name"
-          tickLine={false}
-          tickMargin={10}
-          axisLine={false}
-        />
-        <ChartTooltip
-          content={
-            <ChartTooltipContent
-              valueFormatter={(v) => formatMoney(Number(v))}
-            />
-          }
-        />
-        <ChartLegend content={<ChartLegendContent />} />
-        <Bar dataKey="local" fill="var(--color-local)" radius={4} />
-        <Bar dataKey="remote" fill="var(--color-remote)" radius={4} />
-      </BarChart>
-    </ChartContainer>
-  );
 }
 
-function OverviewChart({
-  localData,
-  remoteData,
-}: {
-  localData: CostOfLiving;
-  remoteData: CostOfLiving;
-}) {
+function calculateTaxesChartData(
+  localData: CostOfLiving,
+  remoteData: CostOfLiving,
+) {
   const localTaxes = calculateNetTakeHomePay(localData);
   const remoteTaxes = calculateNetTakeHomePay(remoteData);
 
-  const chartData = [
+  return [
     {
-      name: "Federal tax",
+      name: "Federal",
       local: localTaxes.fedTax,
       remote: remoteTaxes.fedTax,
     },
     {
-      name: "State tax",
+      name: "State",
       local: localTaxes.stateTax,
       remote: remoteTaxes.stateTax,
     },
     {
-      name: "City tax",
+      name: "City",
       local: localTaxes.cityTax,
       remote: remoteTaxes.cityTax,
     },
     {
-      name: "Social Security",
+      name: "Social",
       local: localTaxes.socialSecurity,
       remote: remoteTaxes.socialSecurity,
     },
@@ -709,6 +703,17 @@ function OverviewChart({
       local: localTaxes.medicare,
       remote: remoteTaxes.medicare,
     },
+  ];
+}
+
+function calculateInvestmentsChartData(
+  localData: CostOfLiving,
+  remoteData: CostOfLiving,
+) {
+  const localTaxes = calculateNetTakeHomePay(localData);
+  const remoteTaxes = calculateNetTakeHomePay(remoteData);
+
+  return [
     {
       name: "401(k)",
       local: localTaxes.fourOhOneK,
@@ -730,10 +735,25 @@ function OverviewChart({
       remote: remoteTaxes.afterTaxInvestments,
     },
   ];
+}
 
+type ChartData = {
+  name: string;
+  local: number;
+  remote: number;
+};
+function MoneyBarChart({
+  localCity,
+  remoteCity,
+  chartData,
+}: {
+  localCity: City;
+  remoteCity: City;
+  chartData: ChartData[];
+}) {
   return (
     <ChartContainer
-      config={barChartConfig(localData.city, remoteData.city)}
+      config={barChartConfig(localCity, remoteCity)}
       className="w-full h-[200px]"
     >
       <BarChart accessibilityLayer data={chartData}>
