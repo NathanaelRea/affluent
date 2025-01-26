@@ -48,7 +48,7 @@ const costOfLivingSchema = z
     status: taxStatusSchema,
     age: agesSchema,
     salary: z.coerce.number(),
-    fourOhOneK: z.coerce.number().min(0).max(1, "Maximum of 100%"),
+    fourOhOneKPercent: z.coerce.number().min(0).max(1, "Maximum of 100%"),
     hsaContribution: z.coerce.number(),
     rothIRAContribution: z.coerce.number(),
     afterTaxInvestments: z.coerce.number(),
@@ -96,21 +96,21 @@ const costOfLivingSchema = z
 function calculateModifiedAGI(data: {
   salary: number;
   hsaContribution: number;
-  fourOhOneK: number;
+  fourOhOneKPercent: number;
 }) {
   const standardDeduction = FED_TAX.standardDeduction;
   return (
     data.salary -
     standardDeduction -
     data.hsaContribution -
-    data.salary * data.fourOhOneK
+    data.salary * data.fourOhOneKPercent
   );
 }
 
 function rothIRALimit(data: {
   salary: number;
   hsaContribution: number;
-  fourOhOneK: number;
+  fourOhOneKPercent: number;
   status: TaxStatus;
   age: Age;
 }) {
@@ -147,7 +147,7 @@ const DEFAULT_VALUES: CostOfLiving = {
   status: "Single",
   salary: 100_000,
   age: "< 50",
-  fourOhOneK: 0.05,
+  fourOhOneKPercent: 0.05,
   hsaContribution: 1_000,
   rothIRAContribution: 7_000,
   afterTaxInvestments: 0,
@@ -205,7 +205,7 @@ function CostOfLiving({
   const status = form.watch("status");
   const age = form.watch("age");
   const salary = form.watch("salary");
-  const fourOhOneK = form.watch("fourOhOneK");
+  const fourOhOneKPercent = form.watch("fourOhOneKPercent");
 
   const maxHsa = hsaLimit({ status, age });
   const hsaContribution = form.watch("hsaContribution");
@@ -214,7 +214,7 @@ function CostOfLiving({
   const maxRoth = rothIRALimit({
     salary,
     hsaContribution,
-    fourOhOneK,
+    fourOhOneKPercent,
     status,
     age,
   });
@@ -275,7 +275,7 @@ function CostOfLiving({
           <InputRHF form={form} formKey="salary" label="Salary" type="money" />
           <InputRHF
             form={form}
-            formKey="fourOhOneK"
+            formKey="fourOhOneKPercent"
             label="401(k)"
             type="percentage"
           />
@@ -817,7 +817,7 @@ function calculateNetTakeHomePay(data: CostOfLiving) {
   const afterTaxInvestments = data.afterTaxInvestments;
 
   // Assume all trad
-  const fourOhOneK = data.salary * data.fourOhOneK;
+  const fourOhOneK = data.salary * data.fourOhOneKPercent;
   const hsa = data.hsaContribution;
 
   const taxableIncome = preTaxIncome - deductions - fourOhOneK - hsa;
