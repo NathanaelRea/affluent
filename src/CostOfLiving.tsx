@@ -462,7 +462,7 @@ function Results({
     }
     handleSubmit(n);
     return n;
-  }, [data, remoteCity, customHousing]);
+  }, [data, remoteCity, customHousing, handleSubmit]);
   const convertedData = convertCOLAndFindSalary(newData, remoteCity);
   const netTakeHome = calculateNetTakeHomePay(data).netTakeHome;
   const resultsRef = useRef<HTMLDivElement>(null);
@@ -478,7 +478,7 @@ function Results({
         `Cost of living adjustment for housing exceeds ${MAX_RATIO}x. To downsize/rightsize, set custom city housing.`,
       );
     }
-  }, [customHousing]);
+  }, [customHousing, convertedData.expenses, data.expenses]);
   checkHousingRatio();
 
   function handleCity(c: City) {
