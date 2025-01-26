@@ -120,7 +120,7 @@ function calculateModifiedAGI(data: {
   );
 }
 
-function fourOhOneKLimit(data: { salary: number; age: Age }) {
+function fourOhOneKLimit(data: { age: Age }) {
   const limit = FED_LIMITS.fourOhOneKContribution.limit;
   if (data.age == "< 50") return limit;
   else {
@@ -621,6 +621,12 @@ function convertCOLAndFindSalary(
   const newRothLimit = rothIRALimit({ ...newData, modifiedAGI });
   newData.rothIRAContribution = Math.min(localAfterTax, newRothLimit);
   newData.afterTaxInvestments = localAfterTax - newData.rothIRAContribution;
+
+  const limit401k = fourOhOneKLimit(data);
+  const max401k = limit401k / newData.salary;
+  const fourOhOneKPercent = Math.min(max401k, newData.fourOhOneKPercent);
+  newData.fourOhOneKPercent = fourOhOneKPercent;
+
   return newData;
 }
 
@@ -657,10 +663,15 @@ function parseExpenses(data: CostOfLiving, remoteCity: City) {
 }
 
 function blackBox(formBase: CostOfLiving, localNetTakeHomePay: number) {
+  const og401k = formBase.fourOhOneKPercent;
+  const limit401k = fourOhOneKLimit(formBase);
   return (x: number) => {
+    const max401kPercent = limit401k / x;
+    const fourOhOneKPercent = Math.min(og401k, max401kPercent);
     const newForm = {
       ...formBase,
       salary: x,
+      fourOhOneKPercent,
     };
     return calculateNetTakeHomePay(newForm).netTakeHome - localNetTakeHomePay;
   };
