@@ -4,7 +4,7 @@ import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { formatMoney, secantMethod } from "./lib/utils";
+import { formatMoney, percentFormatter, secantMethod } from "./lib/utils";
 import { Combobox } from "./components/combobox";
 import {
   ChartConfig,
@@ -56,13 +56,14 @@ const costOfLivingSchema = z
     customHousing: z.record(citySchema, z.number()),
   })
   .superRefine((data, ctx) => {
-    const fourO1kLimit = fourOhOneKLimit(data);
-    const fourOhOneKContribution = data.salary * data.fourOhOneKPercent;
-    if (fourOhOneKContribution > fourO1kLimit) {
+    const limit401k = fourOhOneKLimit(data);
+    const contrib401k = data.salary * data.fourOhOneKPercent;
+    if (contrib401k > limit401k) {
+      const max401kPercent = limit401k / data.salary;
       ctx.addIssue({
         message: `Your 401(k) contribution cannot exceed ${formatMoney(
-          fourO1kLimit,
-        )}`,
+          limit401k,
+        )} (${percentFormatter.format(max401kPercent)})`,
         path: ["fourOhOneKPercent"],
         code: "invalid_arguments",
         argumentsError: new z.ZodError([]),
