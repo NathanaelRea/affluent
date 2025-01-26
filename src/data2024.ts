@@ -146,6 +146,11 @@ export const FED_LIMITS: FedLimits = {
   standardDeduction: 12_550,
   socialSecurity: 0.062,
   medicare: 0.0145,
+  fourOhOneKContribution: {
+    limit: 23_000,
+    catchupContribution50: 7_500,
+    catchupContribution60: 0,
+  },
   hsaMaxContribution: {
     contribution: {
       Single: 4_150,

@@ -75,6 +75,11 @@ export type FedLimits = {
   standardDeduction: number;
   socialSecurity: number;
   medicare: number;
+  fourOhOneKContribution: {
+    limit: number;
+    catchupContribution50: number;
+    catchupContribution60: number;
+  };
   hsaMaxContribution: {
     contribution: StatusBased<number>;
     catchupContribution: number;
