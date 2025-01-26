@@ -34,7 +34,7 @@ import {
 import { Expense, expenseSchema } from "./components/tables/expenses/columns";
 import { DataTable } from "./components/tables/basic-table";
 import { expenseColumns } from "./components/tables/expenses/columns";
-import { FED_TAX, CITY_TAX, STATE_TAX, COST_OF_LIVING } from "./data2024";
+import { FED_LIMITS, CITY_TAX, STATE_TAX, COST_OF_LIVING } from "./data2024";
 import { InputRHF, InputWithFormat } from "./components/InputRHF";
 import { ComboboxRHF } from "./components/ComboboxRHF";
 import { SelectRHF } from "./components/SelectRHF";
@@ -98,7 +98,7 @@ function calculateModifiedAGI(data: {
   hsaContribution: number;
   fourOhOneKPercent: number;
 }) {
-  const standardDeduction = FED_TAX.standardDeduction;
+  const standardDeduction = FED_LIMITS.standardDeduction;
   return (
     data.salary -
     standardDeduction -
@@ -115,7 +115,8 @@ function rothIRALimit(data: {
   age: Age;
 }) {
   const modifiedAGI = calculateModifiedAGI(data);
-  const { range, limit, catchupContribution } = FED_TAX.rothIRAMaxContribution;
+  const { range, limit, catchupContribution } =
+    FED_LIMITS.rothIRAMaxContribution;
   const { low, high } = range[data.status];
   const maxContributionForAge =
     data.age == "< 50" ? limit : limit + catchupContribution;
@@ -133,8 +134,8 @@ function rothIRALimit(data: {
 }
 
 function hsaLimit(data: { status: TaxStatus; age: Age }) {
-  const catchupContribution = FED_TAX.hsaMaxContribution.catchupContribution;
-  const contribution = FED_TAX.hsaMaxContribution.contribution[data.status];
+  const catchupContribution = FED_LIMITS.hsaMaxContribution.catchupContribution;
+  const contribution = FED_LIMITS.hsaMaxContribution.contribution[data.status];
   return data.age == ">= 55"
     ? contribution + catchupContribution
     : contribution;
@@ -801,16 +802,16 @@ function convertCostOfLiving(
 }
 
 function calculateNetTakeHomePay(data: CostOfLiving) {
-  const fedRate = FED_TAX.rates;
+  const fedRate = FED_LIMITS.rates;
   const city = data.city;
   const state = CITY_INFO[city].state;
   const cityRate = CITY_TAX[city];
   const stateRate = STATE_TAX[state];
 
   const preTaxIncome = data.salary;
-  const deductions = FED_TAX.standardDeduction;
-  const socialSecurity = preTaxIncome * FED_TAX.socialSecurity;
-  const medicare = preTaxIncome * FED_TAX.medicare;
+  const deductions = FED_LIMITS.standardDeduction;
+  const socialSecurity = preTaxIncome * FED_LIMITS.socialSecurity;
+  const medicare = preTaxIncome * FED_LIMITS.medicare;
 
   // Assume within limit (already validated)
   const roth = data.rothIRAContribution;

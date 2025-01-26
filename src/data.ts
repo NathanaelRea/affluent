@@ -71,7 +71,7 @@ type RangeBased = {
   high: number;
 };
 
-export type FedTax = {
+export type FedLimits = {
   standardDeduction: number;
   socialSecurity: number;
   medicare: number;
