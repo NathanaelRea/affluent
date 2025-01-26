@@ -791,7 +791,7 @@ function convertCostOfLiving(
   remoteCity: City,
   category: Category,
 ): number {
-  if (category == "Non-Adjustable") {
+  if (category == "Fixed") {
     return value;
   }
 
