@@ -6,8 +6,6 @@ Affluent is a web app that helps you crunch the numbers on your finances. It’s
 
 [Try it out!](https://affluent.netlify.app)
 
----
-
 ## Features
 
 ### 1. **Cost of Living Calculator**
@@ -22,16 +20,12 @@ Affluent is a web app that helps you crunch the numbers on your finances. It’s
 - **Customizable Inputs**: Adjust variables like portfolio size, expected returns, inflation rates, and withdrawal periods.
 - **Probability Analysis**: View success probabilities of your financial plan with detailed visualizations.
 
----
-
 ## Showcase
 
 ### Cost of Living Comparison
 
-![Cost of Living]("./docs/CostOfLiving.png")
+![Cost of Living](docs/CostOfLiving.png)
 
 ### Monte Carlo Simulation
 
-![Monte Carlo SWR]("./docs/MonteCarlo.png")
-
----
+![Monte Carlo SWR](docs/MonteCarlo.png)
