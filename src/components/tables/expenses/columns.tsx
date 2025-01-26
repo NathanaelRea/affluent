@@ -9,6 +9,7 @@ import {
   Box,
   Car,
   House,
+  Minus,
   ShoppingBasket,
   Trash2Icon,
   UtilityPole,
@@ -28,6 +29,7 @@ const categoryIcons: Record<Category, ReactNode> = {
   Grocery: <ShoppingBasket className="h-4" />,
   Utilities: <UtilityPole className="h-4" />,
   Miscellaneous: <Box className="h-4" />,
+  "Non-Adjustable": <Minus className="h-4" />,
 };
 
 export const expenseSchema = z.object({

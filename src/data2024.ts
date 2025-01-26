@@ -1,6 +1,9 @@
-import type { Category, City, FedTax, State, Tax } from "./data";
+import type { City, CostOfLivingCategory, FedTax, State, Tax } from "./data";
 
-export const COST_OF_LIVING: Record<City, Record<Category, number>> = {
+export const COST_OF_LIVING: Record<
+  City,
+  Record<CostOfLivingCategory, number>
+> = {
   "San Francisco": {
     Housing: 274.9,
     Transportation: 147.1,

@@ -791,11 +791,12 @@ function convertCostOfLiving(
   remoteCity: City,
   category: Category,
 ): number {
+  if (category == "Non-Adjustable") {
+    return value;
+  }
+
   const localCOL = COST_OF_LIVING[localCity][category];
   const remoteCOL = COST_OF_LIVING[remoteCity][category];
-  if (!localCOL || !remoteCOL) {
-    throw new Error("Invalid city id");
-  }
   return value * (remoteCOL / localCOL);
 }
 
