@@ -4,7 +4,7 @@ import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { formatMoney, secantMethod } from "./lib/utils";
+import { formatMoney, percentFormatter, secantMethod } from "./lib/utils";
 import { Combobox } from "./components/combobox";
 import {
   ChartConfig,
@@ -34,7 +34,7 @@ import {
 import { Expense, expenseSchema } from "./components/tables/expenses/columns";
 import { DataTable } from "./components/tables/basic-table";
 import { expenseColumns } from "./components/tables/expenses/columns";
-import { FED_TAX, CITY_TAX, STATE_TAX, COST_OF_LIVING } from "./data2024";
+import { FED_LIMITS, CITY_TAX, STATE_TAX, COST_OF_LIVING } from "./data2024";
 import { InputRHF, InputWithFormat } from "./components/InputRHF";
 import { ComboboxRHF } from "./components/ComboboxRHF";
 import { SelectRHF } from "./components/SelectRHF";
@@ -48,7 +48,7 @@ const costOfLivingSchema = z
     status: taxStatusSchema,
     age: agesSchema,
     salary: z.coerce.number(),
-    fourOhOneK: z.coerce.number().min(0).max(1, "Maximum of 100%"),
+    fourOhOneKPercent: z.coerce.number().min(0).max(1, "Maximum of 100%"),
     hsaContribution: z.coerce.number(),
     rothIRAContribution: z.coerce.number(),
     afterTaxInvestments: z.coerce.number(),
@@ -56,12 +56,26 @@ const costOfLivingSchema = z
     customHousing: z.record(citySchema, z.number()),
   })
   .superRefine((data, ctx) => {
-    const rothLimit = rothIRALimit(data);
-    if (data.rothIRAContribution > rothLimit.maxRoth) {
+    const limit401k = fourOhOneKLimit(data);
+    const contrib401k = data.salary * data.fourOhOneKPercent;
+    if (contrib401k > limit401k) {
+      const max401kPercent = limit401k / data.salary;
+      ctx.addIssue({
+        message: `Your 401(k) contribution cannot exceed ${formatMoney(
+          limit401k,
+        )} (${percentFormatter.format(max401kPercent)})`,
+        path: ["fourOhOneKPercent"],
+        code: "invalid_arguments",
+        argumentsError: new z.ZodError([]),
+      });
+    }
+    const modifiedAGI = calculateModifiedAGI(data);
+    const rothLimit = rothIRALimit({ ...data, modifiedAGI });
+    if (data.rothIRAContribution > rothLimit) {
       ctx.addIssue({
         message: `Your Roth IRA contribution cannot exceed ${formatMoney(
-          rothLimit.maxRoth,
-        )} since your modified AGI is ${formatMoney(rothLimit.modifiedAGI)}`,
+          rothLimit,
+        )} since your modified AGI is ${formatMoney(modifiedAGI)}`,
         path: ["rothIRAContribution"],
         code: "invalid_arguments",
         argumentsError: new z.ZodError([]),
@@ -77,14 +91,13 @@ const costOfLivingSchema = z
       });
     }
 
-    const agi = rothLimit.modifiedAGI;
     const totalExpenses = data.expenses.reduce(
       (acc, val) => acc + val.amount * 12,
       0,
     );
-    if (agi - data.rothIRAContribution - totalExpenses < 0) {
+    if (modifiedAGI - data.rothIRAContribution - totalExpenses < 0) {
       ctx.addIssue({
-        message: `Expenses and investments cannot exceed modified gross income (${formatMoney(agi)}).`,
+        message: `Expenses and investments cannot exceed modified gross income (${formatMoney(modifiedAGI)}).`,
         path: ["expenses"],
         code: "invalid_arguments",
         fatal: true,
@@ -96,45 +109,48 @@ const costOfLivingSchema = z
 function calculateModifiedAGI(data: {
   salary: number;
   hsaContribution: number;
-  fourOhOneK: number;
+  fourOhOneKPercent: number;
 }) {
-  const standardDeduction = FED_TAX.standardDeduction;
+  const standardDeduction = FED_LIMITS.standardDeduction;
   return (
     data.salary -
     standardDeduction -
     data.hsaContribution -
-    data.salary * data.fourOhOneK
+    data.salary * data.fourOhOneKPercent
   );
 }
 
+function fourOhOneKLimit(data: { age: Age }) {
+  const limit = FED_LIMITS.fourOhOneKContribution.limit;
+  if (data.age == "< 50") return limit;
+  else {
+    return limit + FED_LIMITS.fourOhOneKContribution.catchupContribution50;
+  }
+}
+
 function rothIRALimit(data: {
-  salary: number;
-  hsaContribution: number;
-  fourOhOneK: number;
+  modifiedAGI: number;
   status: TaxStatus;
   age: Age;
 }) {
-  const modifiedAGI = calculateModifiedAGI(data);
-  const { range, limit, catchupContribution } = FED_TAX.rothIRAMaxContribution;
+  const { range, limit, catchupContribution } =
+    FED_LIMITS.rothIRAMaxContribution;
   const { low, high } = range[data.status];
   const maxContributionForAge =
     data.age == "< 50" ? limit : limit + catchupContribution;
   const maxRoth =
-    modifiedAGI <= low
+    data.modifiedAGI <= low
       ? maxContributionForAge
-      : modifiedAGI >= high
+      : data.modifiedAGI >= high
         ? 0
         : maxContributionForAge -
-          (modifiedAGI - low) * (maxContributionForAge / (high - low));
-  return {
-    modifiedAGI,
-    maxRoth,
-  };
+          (data.modifiedAGI - low) * (maxContributionForAge / (high - low));
+  return maxRoth;
 }
 
 function hsaLimit(data: { status: TaxStatus; age: Age }) {
-  const catchupContribution = FED_TAX.hsaMaxContribution.catchupContribution;
-  const contribution = FED_TAX.hsaMaxContribution.contribution[data.status];
+  const catchupContribution = FED_LIMITS.hsaMaxContribution.catchupContribution;
+  const contribution = FED_LIMITS.hsaMaxContribution.contribution[data.status];
   return data.age == ">= 55"
     ? contribution + catchupContribution
     : contribution;
@@ -147,7 +163,7 @@ const DEFAULT_VALUES: CostOfLiving = {
   status: "Single",
   salary: 100_000,
   age: "< 50",
-  fourOhOneK: 0.05,
+  fourOhOneKPercent: 0.05,
   hsaContribution: 1_000,
   rothIRAContribution: 7_000,
   afterTaxInvestments: 0,
@@ -204,22 +220,27 @@ function CostOfLiving({
 
   const status = form.watch("status");
   const age = form.watch("age");
-  const salary = form.watch("salary");
-  const fourOhOneK = form.watch("fourOhOneK");
 
   const maxHsa = hsaLimit({ status, age });
   const hsaContribution = form.watch("hsaContribution");
   const isHsaMax = hsaContribution == maxHsa;
 
-  const maxRoth = rothIRALimit({
+  const salary = form.watch("salary");
+  const fourOhOneKPercent = form.watch("fourOhOneKPercent");
+
+  const modifiedAGI = calculateModifiedAGI({
     salary,
+    fourOhOneKPercent,
     hsaContribution,
-    fourOhOneK,
+  });
+
+  const maxRoth = rothIRALimit({
+    modifiedAGI,
     status,
     age,
   });
   const currentRoth = form.watch("rothIRAContribution");
-  const isRothMax = currentRoth == maxRoth.maxRoth;
+  const isRothMax = currentRoth == maxRoth;
 
   const expenses = form.watch("expenses");
   // TODO look into not coercing so it's always number?
@@ -275,7 +296,7 @@ function CostOfLiving({
           <InputRHF form={form} formKey="salary" label="Salary" type="money" />
           <InputRHF
             form={form}
-            formKey="fourOhOneK"
+            formKey="fourOhOneKPercent"
             label="401(k)"
             type="percentage"
           />
@@ -309,9 +330,7 @@ function CostOfLiving({
                   type="button"
                   size={null}
                   disabled={isRothMax}
-                  onClick={() =>
-                    form.setValue("rothIRAContribution", maxRoth.maxRoth)
-                  }
+                  onClick={() => form.setValue("rothIRAContribution", maxRoth)}
                 >
                   {isRothMax ? "Max" : "set to max"}
                 </Button>
@@ -598,9 +617,16 @@ function convertCOLAndFindSalary(
   );
 
   newData.salary = remoteSalaryNeeded;
-  const newRothLimit = rothIRALimit(newData).maxRoth;
+  const modifiedAGI = calculateModifiedAGI(data);
+  const newRothLimit = rothIRALimit({ ...newData, modifiedAGI });
   newData.rothIRAContribution = Math.min(localAfterTax, newRothLimit);
   newData.afterTaxInvestments = localAfterTax - newData.rothIRAContribution;
+
+  const limit401k = fourOhOneKLimit(data);
+  const max401k = limit401k / newData.salary;
+  const fourOhOneKPercent = Math.min(max401k, newData.fourOhOneKPercent);
+  newData.fourOhOneKPercent = fourOhOneKPercent;
+
   return newData;
 }
 
@@ -637,10 +663,15 @@ function parseExpenses(data: CostOfLiving, remoteCity: City) {
 }
 
 function blackBox(formBase: CostOfLiving, localNetTakeHomePay: number) {
+  const og401k = formBase.fourOhOneKPercent;
+  const limit401k = fourOhOneKLimit(formBase);
   return (x: number) => {
+    const max401kPercent = limit401k / x;
+    const fourOhOneKPercent = Math.min(og401k, max401kPercent);
     const newForm = {
       ...formBase,
       salary: x,
+      fourOhOneKPercent,
     };
     return calculateNetTakeHomePay(newForm).netTakeHome - localNetTakeHomePay;
   };
@@ -801,23 +832,23 @@ function convertCostOfLiving(
 }
 
 function calculateNetTakeHomePay(data: CostOfLiving) {
-  const fedRate = FED_TAX.rates;
+  const fedRate = FED_LIMITS.rates;
   const city = data.city;
   const state = CITY_INFO[city].state;
   const cityRate = CITY_TAX[city];
   const stateRate = STATE_TAX[state];
 
   const preTaxIncome = data.salary;
-  const deductions = FED_TAX.standardDeduction;
-  const socialSecurity = preTaxIncome * FED_TAX.socialSecurity;
-  const medicare = preTaxIncome * FED_TAX.medicare;
+  const deductions = FED_LIMITS.standardDeduction;
+  const socialSecurity = preTaxIncome * FED_LIMITS.socialSecurity;
+  const medicare = preTaxIncome * FED_LIMITS.medicare;
 
   // Assume within limit (already validated)
   const roth = data.rothIRAContribution;
   const afterTaxInvestments = data.afterTaxInvestments;
 
   // Assume all trad
-  const fourOhOneK = data.salary * data.fourOhOneK;
+  const fourOhOneK = data.salary * data.fourOhOneKPercent;
   const hsa = data.hsaContribution;
 
   const taxableIncome = preTaxIncome - deductions - fourOhOneK - hsa;

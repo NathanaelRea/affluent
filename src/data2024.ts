@@ -1,4 +1,4 @@
-import type { City, CostOfLivingCategory, FedTax, State, Tax } from "./data";
+import type { City, CostOfLivingCategory, FedLimits, State, Tax } from "./data";
 
 export const COST_OF_LIVING: Record<
   City,
@@ -142,10 +142,15 @@ export const COST_OF_LIVING: Record<
   },
 };
 
-export const FED_TAX: FedTax = {
+export const FED_LIMITS: FedLimits = {
   standardDeduction: 12_550,
   socialSecurity: 0.062,
   medicare: 0.0145,
+  fourOhOneKContribution: {
+    limit: 23_000,
+    catchupContribution50: 7_500,
+    catchupContribution60: 0,
+  },
   hsaMaxContribution: {
     contribution: {
       Single: 4_150,
