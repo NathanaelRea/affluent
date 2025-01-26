@@ -197,9 +197,12 @@ export const CATEGORIES = [
   "Utilities",
   "Healthcare",
   "Miscellaneous",
+  "Fixed",
 ] as const;
 export type Category = (typeof CATEGORIES)[number];
 export const categoryScheama = z.enum(CATEGORIES);
+
+export type CostOfLivingCategory = Exclude<Category, "Fixed">;
 
 export const AGES = ["< 50", ">= 50, < 55", ">= 55"] as const;
 export type Age = (typeof AGES)[number];
