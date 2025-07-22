@@ -65,7 +65,7 @@ const costOfLivingSchema = z
       ctx.addIssue({
         message: `Your 401(k) contribution cannot exceed ${formatMoney(
           limit401k,
-        )} (${percentFormatter.format(max401kPercent)})`,
+        )} (${formatPercent(max401kPercent)})`,
         path: ["fourOhOneKPercent"],
         code: "invalid_arguments",
         argumentsError: new z.ZodError([]),
@@ -459,7 +459,6 @@ function Results({ data }: { data: CostOfLiving }) {
     cityHousing[remoteCity],
   );
   const convertedData = convertCOLAndFindSalary(data, remoteCity, cityHousing);
-  const netTakeHome = calculateNetTakeHomePay(data).netTakeHome;
   const resultsRef = useRef<HTMLDivElement>(null);
 
   const checkHousingRatio = useCallback(() => {
