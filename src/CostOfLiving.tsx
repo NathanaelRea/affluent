@@ -3,8 +3,8 @@ import { Form } from "./components/ui/form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { formatMoney, percentFormatter, secantMethod } from "./lib/utils";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { formatMoney, formatPercent, secantMethod } from "./lib/utils";
 import { Combobox } from "./components/combobox";
 import {
   ChartConfig,
@@ -42,6 +42,9 @@ import ErrorMessage from "./components/ErrorMessage";
 import { TooltipHelp } from "./components/TooltipHelp";
 import { toast } from "sonner";
 
+const cityHousingSchema = z.record(citySchema, z.number());
+type CityHousing = z.infer<typeof cityHousingSchema>;
+
 const costOfLivingSchema = z
   .object({
     city: citySchema,
@@ -53,7 +56,6 @@ const costOfLivingSchema = z
     rothIRAContribution: z.coerce.number(),
     afterTaxInvestments: z.coerce.number(),
     expenses: z.array(expenseSchema),
-    customHousing: z.record(citySchema, z.number()),
   })
   .superRefine((data, ctx) => {
     const limit401k = fourOhOneKLimit(data);
@@ -63,7 +65,7 @@ const costOfLivingSchema = z
       ctx.addIssue({
         message: `Your 401(k) contribution cannot exceed ${formatMoney(
           limit401k,
-        )} (${percentFormatter.format(max401kPercent)})`,
+        )} (${formatPercent(max401kPercent)})`,
         path: ["fourOhOneKPercent"],
         code: "invalid_arguments",
         argumentsError: new z.ZodError([]),
@@ -105,6 +107,7 @@ const costOfLivingSchema = z
       });
     }
   });
+type CostOfLiving = z.infer<typeof costOfLivingSchema>;
 
 function calculateModifiedAGI(data: {
   salary: number;
@@ -156,35 +159,11 @@ function hsaLimit(data: { status: TaxStatus; age: Age }) {
     : contribution;
 }
 
-type CostOfLiving = z.infer<typeof costOfLivingSchema>;
-
-const DEFAULT_VALUES: CostOfLiving = {
-  city: "Philadelphia",
-  status: "Single",
-  salary: 100_000,
-  age: "< 50",
-  fourOhOneKPercent: 0.05,
-  hsaContribution: 1_000,
-  rothIRAContribution: 7_000,
-  afterTaxInvestments: 0,
-  expenses: [
-    { name: "Rent", amount: 1_000, category: "Housing" },
-    { name: "Food", amount: 300, category: "Grocery" },
-    { name: "Resturaunt", amount: 300, category: "Grocery" },
-    { name: "Utilities", amount: 75, category: "Utilities" },
-    { name: "Car", amount: 500, category: "Transportation" },
-    { name: "Entertainment", amount: 500, category: "Miscellaneous" },
-    { name: "Travel", amount: 500, category: "Miscellaneous" },
-    { name: "Misc", amount: 500, category: "Miscellaneous" },
-  ],
-  customHousing: {},
-};
-
 export default function CostOfLivingWrapped() {
-  const defaultValues = loadFromLocalStorage()?.data ?? DEFAULT_VALUES;
+  const defaultValues = loadFromLocalStorage(STORAGE.finance);
 
   function resetDefaults() {
-    saveToLocalStorage(DEFAULT_VALUES);
+    saveToLocalStorage(STORAGE.finance, STORAGE.finance.default);
     window.location.reload(); // this is kinda dumb
   }
 
@@ -209,13 +188,7 @@ function CostOfLiving({
 
   function onSubmit(data: CostOfLiving) {
     setData(data);
-    saveToLocalStorage(data);
-  }
-
-  function handleSubmit(maybeData: unknown) {
-    // is this bad? goes around RHF?
-    const data = costOfLivingSchema.parse(maybeData);
-    onSubmit(data);
+    saveToLocalStorage(STORAGE.finance, data);
   }
 
   const status = form.watch("status");
@@ -243,11 +216,13 @@ function CostOfLiving({
   const isRothMax = currentRoth == maxRoth;
 
   const expenses = form.watch("expenses");
-  // TODO look into not coercing so it's always number?
+  // TODO fix: need Number() right now because expenses setting as string?
   const totalMoExpenses = expenses.reduce(
     (acc, val) => acc + Number(val.amount),
     0,
   );
+  const netTakeHome = data ? calculateNetTakeHomePay(data).netTakeHome : 0;
+  const netSavings = data ? calculateSavingsRate(data) : 0;
 
   return (
     <>
@@ -388,6 +363,16 @@ function CostOfLiving({
             <p className="text-sm text-muted-foreground text-right">
               Total expenses: {formatMoney(totalMoExpenses)}/mo
             </p>
+            {data && (
+              <>
+                <p className="text-sm text-muted-foreground text-right">
+                  Net take home: {formatMoney(netTakeHome / 12)}/mo
+                </p>
+                <p className="text-sm text-muted-foreground text-right">
+                  Savings rate: {formatPercent(netSavings)}
+                </p>
+              </>
+            )}
           </div>
           <ErrorMessage message={form.formState.errors?.expenses?.message} />
           <div className="flex items-center justify-between md:col-span-2">
@@ -400,71 +385,80 @@ function CostOfLiving({
           </div>
         </form>
       </Form>
-      {data && <Results data={data} handleSubmit={handleSubmit} />}
+      {data && <Results data={data} />}
     </>
   );
 }
 
-const LOCAL_STORAGE_KEY = "finance-data";
+type Store<T extends z.ZodTypeAny> = {
+  key: string;
+  schema: T;
+  default: z.infer<T>;
+};
+const STORAGE = {
+  finance: {
+    key: "finance-data",
+    schema: costOfLivingSchema,
+    default: {
+      city: "Philadelphia",
+      status: "Single",
+      salary: 100_000,
+      age: "< 50",
+      fourOhOneKPercent: 0.05,
+      hsaContribution: 1_000,
+      rothIRAContribution: 7_000,
+      afterTaxInvestments: 0,
+      expenses: [
+        { name: "Rent", amount: 1_000, category: "Housing" },
+        { name: "Food", amount: 300, category: "Grocery" },
+        { name: "Resturaunt", amount: 300, category: "Grocery" },
+        { name: "Utilities", amount: 75, category: "Utilities" },
+        { name: "Car", amount: 500, category: "Transportation" },
+        { name: "Entertainment", amount: 500, category: "Miscellaneous" },
+        { name: "Travel", amount: 500, category: "Miscellaneous" },
+        { name: "Misc", amount: 500, category: "Miscellaneous" },
+      ],
+    } as CostOfLiving,
+  },
+  cityHousing: {
+    key: "city-housing",
+    schema: cityHousingSchema,
+    default: {} as CityHousing,
+  },
+};
 
-function createLocalStorageWrapperSchema<T extends z.ZodTypeAny>(schema: T) {
-  return z.object({
-    version: z.number(),
-    data: schema,
-  });
-}
-
-const costOfLivingWrapped = createLocalStorageWrapperSchema(costOfLivingSchema);
-type CostOfLivingWrapped = z.infer<typeof costOfLivingWrapped>;
-
-function saveToLocalStorage(data: CostOfLiving) {
+function saveToLocalStorage<TSchema extends z.ZodTypeAny>(
+  storage: Store<TSchema>,
+  data: z.infer<TSchema>,
+) {
   try {
-    const dataWrapped = costOfLivingWrapped.parse({ version: 1, data });
-    localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(dataWrapped));
+    localStorage.setItem(storage.key, JSON.stringify(data));
   } catch {
     console.error("Failed to save to local storage");
   }
 }
 
-function loadFromLocalStorage(): CostOfLivingWrapped | undefined {
+function loadFromLocalStorage<TSchema extends z.ZodTypeAny>(
+  storage: Store<TSchema>,
+): z.infer<TSchema> {
   try {
-    const rawData = localStorage.getItem(LOCAL_STORAGE_KEY);
-    if (!rawData) return undefined;
-    return costOfLivingWrapped.parse(JSON.parse(rawData));
+    const rawData = localStorage.getItem(storage.key);
+    if (!rawData) return storage.default;
+    return storage.schema.parse(JSON.parse(rawData));
   } catch {
-    return undefined;
+    return storage.default;
   }
 }
 
-function Results({
-  data,
-  handleSubmit,
-}: {
-  data: CostOfLiving;
-  handleSubmit: (_: unknown) => void;
-}) {
+function Results({ data }: { data: CostOfLiving }) {
   const [remoteCity, setRemoteCity] = useState<City>("San Francisco");
+
+  const cityHousing = loadFromLocalStorage(STORAGE.cityHousing);
+
   const [customHousing, setCustomHousing] = useState<number | undefined>(
-    data.customHousing[remoteCity],
+    cityHousing[remoteCity],
   );
-  const newData = useMemo(() => {
-    // this kinda sucks
-    if (data.customHousing[remoteCity] == customHousing) {
-      return data;
-    }
-    const n = {
-      ...data,
-      customHousing: { ...data.customHousing, [remoteCity]: customHousing },
-    };
-    // dumb
-    if (!customHousing) {
-      delete n.customHousing[remoteCity];
-    }
-    handleSubmit(n);
-    return n;
-  }, [data, remoteCity, customHousing, handleSubmit]);
-  const convertedData = convertCOLAndFindSalary(newData, remoteCity);
-  const netTakeHome = calculateNetTakeHomePay(data).netTakeHome;
+  const convertedData = convertCOLAndFindSalary(data, remoteCity, cityHousing);
   const resultsRef = useRef<HTMLDivElement>(null);
 
   const checkHousingRatio = useCallback(() => {
@@ -483,7 +477,7 @@ function Results({
 
   function handleCity(c: City) {
     setRemoteCity(c);
-    setCustomHousing(data.customHousing[c]);
+    setCustomHousing(cityHousing[c]);
   }
 
   function addCustomHousing() {
@@ -557,8 +551,7 @@ function Results({
         <span className="text-sm text-muted-foreground">Required Income</span>
         <h2 className="text-2xl">{formatMoney(convertedData.salary)}</h2>
         <p className="text-xs text-muted-foreground text-right">
-          To maintain the same net take home of {formatMoney(netTakeHome / 12)}
-          /mo
+          To maintain the same net take home and savings rate
         </p>
       </div>
       <h3>Taxes</h3>
@@ -595,6 +588,7 @@ function getRent(expenses: Expense[]) {
 function convertCOLAndFindSalary(
   data: CostOfLiving,
   remoteCity: City,
+  cityHousing: CityHousing,
 ): CostOfLiving {
   const localAfterTax = data.rothIRAContribution + data.afterTaxInvestments;
   const dataNoAfterTax: CostOfLiving = {
@@ -605,7 +599,7 @@ function convertCOLAndFindSalary(
   const newData: CostOfLiving = {
     ...dataNoAfterTax,
     city: remoteCity,
-    expenses: parseExpenses(data, remoteCity),
+    expenses: parseExpenses(data, remoteCity, cityHousing),
   };
 
   const localNetTakeHomePay =
@@ -630,12 +624,16 @@ function convertCOLAndFindSalary(
   return newData;
 }
 
-function parseExpenses(data: CostOfLiving, remoteCity: City) {
+function parseExpenses(
+  data: CostOfLiving,
+  remoteCity: City,
+  cityHousing: CityHousing,
+) {
   const newExpenses = data.expenses.map((e) => ({
     ...e,
     amount: convertCostOfLiving(e.amount, data.city, remoteCity, e.category),
   }));
-  const customHousing = data.customHousing[remoteCity];
+  const customHousing = cityHousing[remoteCity];
   if (!customHousing) {
     return newExpenses;
   }
@@ -650,7 +648,7 @@ function parseExpenses(data: CostOfLiving, remoteCity: City) {
     }
   }
   housing.sort((a, b) => b.amount - a.amount);
-  if (housing[0]) {
+  if (housing.at(0)) {
     housing[0] = { ...housing[0], amount: customHousing };
   } else {
     housing.push({
@@ -887,6 +885,16 @@ function calculateNetTakeHomePay(data: CostOfLiving) {
     rothIRAContribution: roth,
     afterTaxInvestments,
   };
+}
+
+function calculateSavingsRate(data: CostOfLiving) {
+  const fourOhOneK = data.salary * data.fourOhOneKPercent;
+  const investments =
+    fourOhOneK +
+    data.hsaContribution +
+    data.rothIRAContribution +
+    data.afterTaxInvestments;
+  return investments / data.salary;
 }
 
 function calculateTax(income: number, tax: Tax, status: TaxStatus): number {
