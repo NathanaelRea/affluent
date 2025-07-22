@@ -32,14 +32,10 @@ import {
   agesSchema,
   Age,
 } from "@/data";
-import { Expense, expenseSchema } from "@/components/tables/expenses/columns";
-import { DataTable } from "@/components/tables/basic-table";
-import { expenseColumns } from "@/components/tables/expenses/columns";
 import { FED_LIMITS, CITY_TAX, STATE_TAX, COST_OF_LIVING } from "@/data2024";
 import { InputRHF, InputWithFormat } from "@/components/InputRHF";
 import { ComboboxRHF } from "@/components/ComboboxRHF";
 import { SelectRHF } from "@/components/SelectRHF";
-import ErrorMessage from "@/components/ErrorMessage";
 import { TooltipHelp } from "@/components/TooltipHelp";
 import { toast } from "sonner";
 
@@ -60,7 +56,12 @@ const costOfLivingSchema = z
     hsaContribution: z.coerce.number(),
     rothIRAContribution: z.coerce.number(),
     afterTaxInvestments: z.coerce.number(),
-    expenses: z.array(expenseSchema),
+    expenses: z.object({
+      housing: z.coerce.number(),
+      transportaiton: z.coerce.number(),
+      miscellaneous: z.coerce.number(),
+      fixed: z.coerce.number(),
+    }),
   })
   .superRefine((data, ctx) => {
     const limit401k = fourOhOneKLimit(data);
@@ -98,10 +99,7 @@ const costOfLivingSchema = z
       });
     }
 
-    const totalExpenses = data.expenses.reduce(
-      (acc, val) => acc + val.amount * 12,
-      0,
-    );
+    const totalExpenses = calculateExpenses(data.expenses);
     if (modifiedAGI - data.rothIRAContribution - totalExpenses < 0) {
       ctx.addIssue({
         message: `Expenses and investments cannot exceed modified gross income (${formatMoney(modifiedAGI)}).`,
@@ -220,12 +218,8 @@ function CostOfLiving({
   const currentRoth = form.watch("rothIRAContribution");
   const isRothMax = currentRoth == maxRoth;
 
-  const expenses = form.watch("expenses");
   // TODO fix: need Number() right now because expenses setting as string?
-  const totalMoExpenses = expenses.reduce(
-    (acc, val) => acc + Number(val.amount),
-    0,
-  );
+  const totalMoExpenses = data ? calculateExpenses(data.expenses) : 0;
   const netTakeHome = data ? calculateNetTakeHomePay(data).netTakeHome : 0;
   const netSavings = data ? calculateSavingsRate(data) : 0;
 
@@ -324,52 +318,38 @@ function CostOfLiving({
             label="After tax investments"
             type="money"
           />
-          <div className="md:col-span-2">
-            <DataTable
-              data={expenses}
-              columns={expenseColumns}
-              setValue={(name, value) => {
-                // this is kinda dumb
-                form.setValue(
-                  name as
-                    | `expenses.${number}.category`
-                    | `expenses.${number}.amount`
-                    | `expenses.${number}.name`,
-                  value,
-                );
-              }}
-              deleteRow={(rowIndex: number) => {
-                const expenses = form.getValues("expenses");
-                form.setValue(
-                  "expenses",
-                  expenses.filter((_, i) => i != rowIndex),
-                );
-              }}
-            />
-            <Button
-              size={"sm"}
-              variant={"outline"}
-              type="button"
-              className="w-full"
-              onClick={() => {
-                const expenses = form.getValues("expenses");
-                form.setValue("expenses", [
-                  ...expenses,
-                  {
-                    name: `Expense ${expenses.length + 1}`,
-                    amount: 100,
-                    category: "Miscellaneous",
-                  },
-                ]);
-              }}
-            >
-              <PlusIcon />
-            </Button>
-            <p className="text-sm text-muted-foreground text-right">
-              Total expenses: {formatMoney(totalMoExpenses)}/mo
-            </p>
+          <div />
+          <div className="md:col-span-2">Expenses</div>
+          <InputRHF
+            form={form}
+            formKey="expenses.housing"
+            label="Housing"
+            type="money"
+          />
+          <InputRHF
+            form={form}
+            formKey="expenses.transportaiton"
+            label="Transportation"
+            type="money"
+          />
+          <InputRHF
+            form={form}
+            formKey="expenses.miscellaneous"
+            label="Other"
+            type="money"
+          />
+          <InputRHF
+            form={form}
+            formKey="expenses.fixed"
+            label="Fixed"
+            type="money"
+          />
+          <div className="flex flex-col md:col-span-2">
             {data && (
               <>
+                <p className="text-sm text-muted-foreground text-right">
+                  Total expenses: {formatMoney(totalMoExpenses)}/mo
+                </p>
                 <p className="text-sm text-muted-foreground text-right">
                   Net take home: {formatMoney(netTakeHome / 12)}/mo
                 </p>
@@ -379,7 +359,6 @@ function CostOfLiving({
               </>
             )}
           </div>
-          <ErrorMessage message={form.formState.errors?.expenses?.message} />
           <div className="flex items-center justify-between md:col-span-2">
             <Button variant="outline" onClick={resetDefaults} type="button">
               Reset
@@ -413,16 +392,12 @@ const STORAGE = {
       hsaContribution: 1_000,
       rothIRAContribution: 7_000,
       afterTaxInvestments: 0,
-      expenses: [
-        { name: "Rent", amount: 1_000, category: "Housing" },
-        { name: "Food", amount: 300, category: "Grocery" },
-        { name: "Resturaunt", amount: 300, category: "Grocery" },
-        { name: "Utilities", amount: 75, category: "Utilities" },
-        { name: "Car", amount: 500, category: "Transportation" },
-        { name: "Entertainment", amount: 500, category: "Miscellaneous" },
-        { name: "Travel", amount: 500, category: "Miscellaneous" },
-        { name: "Misc", amount: 500, category: "Miscellaneous" },
-      ],
+      expenses: {
+        housing: 1_500,
+        transportaiton: 500,
+        miscellaneous: 2_500,
+        fixed: 500,
+      },
     } as CostOfLiving,
   },
   cityHousing: {
@@ -469,8 +444,8 @@ function Results({ data }: { data: CostOfLiving }) {
   const checkHousingRatio = useCallback(() => {
     if (customHousing) return;
     const MAX_RATIO = 2.5;
-    const rent1 = getRent(data.expenses);
-    const rent2 = getRent(convertedData.expenses);
+    const rent1 = data.expenses.housing;
+    const rent2 = convertedData.expenses.housing;
     const ratio = rent1 / rent2;
     if (ratio >= MAX_RATIO || 1 >= ratio * MAX_RATIO) {
       toast.warning(
@@ -486,7 +461,7 @@ function Results({ data }: { data: CostOfLiving }) {
   }
 
   function addCustomHousing() {
-    const remoteRent = getRent(convertedData.expenses);
+    const remoteRent = convertedData.expenses.housing;
     setCustomHousing(Math.round(remoteRent));
   }
 
@@ -581,15 +556,6 @@ function Results({ data }: { data: CostOfLiving }) {
   );
 }
 
-function getRent(expenses: Expense[]) {
-  return expenses.reduce((acc, val) => {
-    if (val.category == "Housing") {
-      return Math.max(acc, val.amount);
-    }
-    return acc;
-  }, 0);
-}
-
 function convertCOLAndFindSalary(
   data: CostOfLiving,
   remoteCity: City,
@@ -629,42 +595,6 @@ function convertCOLAndFindSalary(
   return newData;
 }
 
-function parseExpenses(
-  data: CostOfLiving,
-  remoteCity: City,
-  cityHousing: CityHousing,
-) {
-  const newExpenses = data.expenses.map((e) => ({
-    ...e,
-    amount: convertCostOfLiving(e.amount, data.city, remoteCity, e.category),
-  }));
-  const customHousing = cityHousing[remoteCity];
-  if (!customHousing) {
-    return newExpenses;
-  }
-
-  const housing: Expense[] = [];
-  const nonHousing: Expense[] = [];
-  for (const e of newExpenses) {
-    if (e.category == "Housing") {
-      housing.push(e);
-    } else {
-      nonHousing.push(e);
-    }
-  }
-  housing.sort((a, b) => b.amount - a.amount);
-  if (housing.at(0)) {
-    housing[0] = { ...housing[0], amount: customHousing };
-  } else {
-    housing.push({
-      name: "Housing",
-      category: "Housing",
-      amount: customHousing,
-    });
-  }
-  return [...housing, ...nonHousing];
-}
-
 function blackBox(formBase: CostOfLiving, localNetTakeHomePay: number) {
   const og401k = formBase.fourOhOneKPercent;
   const limit401k = fourOhOneKLimit(formBase);
@@ -693,15 +623,68 @@ function barChartConfig(localCity: City, remoteCity: City): ChartConfig {
   } satisfies ChartConfig;
 }
 
+function parseExpenses(
+  data: CostOfLiving,
+  remoteCity: City,
+  cityHousing: CityHousing,
+): CostOfLiving["expenses"] {
+  const cityHousingOverride = cityHousing ? cityHousing[remoteCity] : undefined;
+  return {
+    housing: cityHousingOverride
+      ? cityHousingOverride
+      : convertCostOfLiving(
+          data.expenses.housing,
+          data.city,
+          remoteCity,
+          "Housing",
+        ),
+    transportaiton: convertCostOfLiving(
+      data.expenses.transportaiton,
+      data.city,
+      remoteCity,
+      "Transportation",
+    ),
+    miscellaneous: convertCostOfLiving(
+      data.expenses.miscellaneous,
+      data.city,
+      remoteCity,
+      "Miscellaneous",
+    ),
+    fixed: convertCostOfLiving(
+      data.expenses.fixed,
+      data.city,
+      remoteCity,
+      "Fixed",
+    ),
+  };
+}
+
 function calculateExpensesChartData(
   localData: CostOfLiving,
   remoteData: CostOfLiving,
 ) {
-  return localData.expenses.map((expense, index) => ({
-    name: expense.name,
-    local: expense.amount,
-    remote: remoteData.expenses[index].amount,
-  }));
+  return [
+    {
+      name: "Housing",
+      local: localData.expenses.housing,
+      remote: remoteData.expenses.housing,
+    },
+    {
+      name: "Transportation",
+      local: localData.expenses.transportaiton,
+      remote: remoteData.expenses.transportaiton,
+    },
+    {
+      name: "Miscellaneous",
+      local: localData.expenses.miscellaneous,
+      remote: remoteData.expenses.miscellaneous,
+    },
+    {
+      name: "Fixed",
+      local: localData.expenses.fixed,
+      remote: remoteData.expenses.fixed,
+    },
+  ];
 }
 
 function calculateTaxesChartData(
@@ -860,8 +843,7 @@ function calculateNetTakeHomePay(data: CostOfLiving) {
   const stateTax = calculateTax(taxableIncome, stateRate, data.status);
   const cityTax = calculateTax(taxableIncome, cityRate, data.status);
 
-  const expenses =
-    12 * data.expenses.reduce((acc, { amount }) => acc + amount, 0);
+  const expenses = 12 * calculateExpenses(data.expenses);
 
   const netTakeHome =
     preTaxIncome -
@@ -890,6 +872,15 @@ function calculateNetTakeHomePay(data: CostOfLiving) {
     rothIRAContribution: roth,
     afterTaxInvestments,
   };
+}
+
+function calculateExpenses(expenses: CostOfLiving["expenses"]) {
+  return (
+    expenses.housing +
+    expenses.transportaiton +
+    expenses.miscellaneous +
+    expenses.fixed
+  );
 }
 
 function calculateSavingsRate(data: CostOfLiving) {
