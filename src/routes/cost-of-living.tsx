@@ -1,11 +1,12 @@
-import { Button } from "./components/ui/button";
-import { Form } from "./components/ui/form";
+import { createFileRoute } from "@tanstack/react-router";
+import { Button } from "@/components/ui/button";
+import { Form } from "@/components/ui/form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { formatMoney, formatPercent, secantMethod } from "./lib/utils";
-import { Combobox } from "./components/combobox";
+import { formatMoney, formatPercent, secantMethod } from "@/lib/utils";
+import { Combobox } from "@/components/combobox";
 import {
   ChartConfig,
   ChartContainer,
@@ -13,7 +14,7 @@ import {
   ChartLegendContent,
   ChartTooltip,
   ChartTooltipContent,
-} from "./components/ui/chart";
+} from "@/components/ui/chart";
 import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from "recharts";
 import { MinusIcon, PlusIcon } from "lucide-react";
 import {
@@ -30,17 +31,21 @@ import {
   AGES,
   agesSchema,
   Age,
-} from "./data";
-import { Expense, expenseSchema } from "./components/tables/expenses/columns";
-import { DataTable } from "./components/tables/basic-table";
-import { expenseColumns } from "./components/tables/expenses/columns";
-import { FED_LIMITS, CITY_TAX, STATE_TAX, COST_OF_LIVING } from "./data2024";
-import { InputRHF, InputWithFormat } from "./components/InputRHF";
-import { ComboboxRHF } from "./components/ComboboxRHF";
-import { SelectRHF } from "./components/SelectRHF";
-import ErrorMessage from "./components/ErrorMessage";
-import { TooltipHelp } from "./components/TooltipHelp";
+} from "@/data";
+import { Expense, expenseSchema } from "@/components/tables/expenses/columns";
+import { DataTable } from "@/components/tables/basic-table";
+import { expenseColumns } from "@/components/tables/expenses/columns";
+import { FED_LIMITS, CITY_TAX, STATE_TAX, COST_OF_LIVING } from "@/data2024";
+import { InputRHF, InputWithFormat } from "@/components/InputRHF";
+import { ComboboxRHF } from "@/components/ComboboxRHF";
+import { SelectRHF } from "@/components/SelectRHF";
+import ErrorMessage from "@/components/ErrorMessage";
+import { TooltipHelp } from "@/components/TooltipHelp";
 import { toast } from "sonner";
+
+export const Route = createFileRoute("/cost-of-living")({
+  component: CostOfLivingWrapped,
+});
 
 const cityHousingSchema = z.record(citySchema, z.number());
 type CityHousing = z.infer<typeof cityHousingSchema>;
@@ -159,7 +164,7 @@ function hsaLimit(data: { status: TaxStatus; age: Age }) {
     : contribution;
 }
 
-export default function CostOfLivingWrapped() {
+function CostOfLivingWrapped() {
   const defaultValues = loadFromLocalStorage(STORAGE.finance);
 
   function resetDefaults() {
