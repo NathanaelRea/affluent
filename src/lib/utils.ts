@@ -22,6 +22,10 @@ export function formatMoney(value: number): string {
   return moneyFormatter.format(value);
 }
 
+export function formatPercent(value: number): string {
+  return percentFormatter.format(value);
+}
+
 export function secantMethod(
   f: (_x: number) => number,
   x0: number,
