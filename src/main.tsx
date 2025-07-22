@@ -1,32 +1,28 @@
 import { StrictMode } from "react";
-import { createRoot } from "react-dom/client";
+import ReactDOM from "react-dom/client";
+import { RouterProvider, createRouter } from "@tanstack/react-router";
 import "./index.css";
-import { ThemeProvider } from "@/components/theme-provider";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { Toaster } from "sonner";
-import { BrowserRouter, Navigate, Route, Routes } from "react-router";
-import CostOfLiving from "./CostOfLiving.tsx";
-import Layout from "./Nav.tsx";
-import Monte from "./Monte.tsx";
 
-const queryClient = new QueryClient();
+// Import the generated route tree
+import { routeTree } from "./routeTree.gen";
 
-createRoot(document.getElementById("root")!).render(
-  <StrictMode>
-    <ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">
-      <QueryClientProvider client={queryClient}>
-        <BrowserRouter>
-          <Routes>
-            <Route element={<Layout />}>
-              <Route path="/" element={<CostOfLiving />} />
-              <Route path="/cost-of-living" element={<CostOfLiving />} />
-              <Route path="/monte-carlo-swr" element={<Monte />} />
-              <Route path="*" element={<Navigate to="/" replace />} />
-            </Route>
-          </Routes>
-        </BrowserRouter>
-        <Toaster />
-      </QueryClientProvider>
-    </ThemeProvider>
-  </StrictMode>,
-);
+// Create a new router instance
+const router = createRouter({ routeTree });
+
+// Register the router instance for type safety
+declare module "@tanstack/react-router" {
+  interface Register {
+    router: typeof router;
+  }
+}
+
+// Render the app
+const rootElement = document.getElementById("root")!;
+if (!rootElement.innerHTML) {
+  const root = ReactDOM.createRoot(rootElement);
+  root.render(
+    <StrictMode>
+      <RouterProvider router={router} />
+    </StrictMode>,
+  );
+}

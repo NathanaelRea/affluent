@@ -1,4 +1,4 @@
-import { Outlet, NavLink } from "react-router";
+import { Link } from "@tanstack/react-router";
 import {
   NavigationMenu,
   NavigationMenuList,
@@ -6,45 +6,9 @@ import {
   NavigationMenuLink,
   NavigationMenuContent,
   NavigationMenuTrigger,
-} from "./components/ui/navigation-menu.tsx";
+} from "./ui/navigation-menu.tsx";
 import React from "react";
-import { cn } from "./lib/utils.ts";
-
-export default function Layout() {
-  return (
-    <div className="flex flex-col h-full min-h-screen">
-      <nav className="border-b-2 border-cyan-900 flex justify-center py-2 px-6">
-        <div className="flex justify-between items-center max-w-2xl w-full">
-          <NavLink to="/">
-            <span className="font-semibold text-lg text-transparent bg-clip-text bg-gradient-to-r from-emerald-500 to-sky-500">
-              Affluent
-            </span>
-          </NavLink>
-          <NavMenu />
-        </div>
-      </nav>
-      <div className="flex-grow">
-        <div className="flex flex-col justify-center items-center p-4 h-full">
-          <main className="flex flex-col max-w-2xl w-full">
-            <Outlet />
-          </main>
-        </div>
-      </div>
-      <footer className="border-t-2 border-cyan-900 flex justify-center py-2">
-        <div className="flex items-center justify-center gap-2">
-          <div className="h-4 w-4">
-            <a href="https://github.com/nathanaelrea/affluent">
-              <GithubIcon />
-            </a>
-          </div>
-          <span className="text-xs font-semibold text-muted-foreground">
-            For informational purposes only. Data is only stored locally.
-          </span>
-        </div>
-      </footer>
-    </div>
-  );
-}
+import { cn } from "../lib/utils.ts";
 
 type Component = {
   title: string;
@@ -65,7 +29,7 @@ const components: Component[] = [
   },
 ];
 
-function NavMenu() {
+export function NavMenu() {
   return (
     <NavigationMenu>
       <NavigationMenuList>
@@ -97,7 +61,7 @@ const ListItem = React.forwardRef<
   return (
     <li>
       <NavigationMenuLink asChild>
-        <NavLink
+        <Link
           ref={ref}
           className={cn(
             "block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground",
@@ -110,7 +74,7 @@ const ListItem = React.forwardRef<
           <p className="line-clamp-2 text-sm leading-snug text-muted-foreground">
             {children}
           </p>
-        </NavLink>
+        </Link>
       </NavigationMenuLink>
     </li>
   );

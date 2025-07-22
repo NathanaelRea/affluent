@@ -1,27 +1,32 @@
+import { createFileRoute } from "@tanstack/react-router";
 import { CartesianGrid, Line, LineChart, XAxis, YAxis } from "recharts";
 import {
   ChartConfig,
   ChartContainer,
   ChartTooltip,
   ChartTooltipContent,
-} from "./components/ui/chart";
-import { formatMoney, percentFormatter } from "./lib/utils";
+} from "@/components/ui/chart";
+import { formatMoney, percentFormatter } from "@/lib/utils";
 import { useEffect, useRef, useState, useTransition } from "react";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
-import { Form, FormLabel } from "./components/ui/form";
-import { Button } from "./components/ui/button";
+import { Form, FormLabel } from "@/components/ui/form";
+import { Button } from "@/components/ui/button";
 import { PlusIcon } from "lucide-react";
-import { DataTable } from "./components/tables/basic-table";
+import { DataTable } from "@/components/tables/basic-table";
 import {
   Fund,
   fundColumns,
   fundSchema,
-} from "./components/tables/portfolio/columns";
-import { InputRHF } from "./components/InputRHF";
-import ErrorMessage from "./components/ErrorMessage.tsx";
-import FundDialog from "./components/FundDialog.tsx";
+} from "@/components/tables/portfolio/columns";
+import { InputRHF } from "@/components/InputRHF";
+import ErrorMessage from "@/components/ErrorMessage.tsx";
+import FundDialog from "@/components/FundDialog.tsx";
+
+export const Route = createFileRoute("/monte-carlo-swr")({
+  component: Monte,
+});
 
 type Simulation = {
   year: number;
@@ -66,7 +71,7 @@ const defaultValues: MyForm = {
   ],
 };
 
-export default function Monte() {
+function Monte() {
   const [parsedData, setParsedData] = useState<ParsedData>();
   const [isPending, startTransition] = useTransition();
 
