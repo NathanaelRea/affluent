@@ -33,13 +33,10 @@ import {
   Age,
 } from "@/data";
 import { Expense, expenseSchema } from "@/components/tables/expenses/columns";
-import { DataTable } from "@/components/tables/basic-table";
-import { expenseColumns } from "@/components/tables/expenses/columns";
 import { FED_LIMITS, CITY_TAX, STATE_TAX, COST_OF_LIVING } from "@/data2024";
 import { InputRHF, InputWithFormat } from "@/components/InputRHF";
 import { ComboboxRHF } from "@/components/ComboboxRHF";
 import { SelectRHF } from "@/components/SelectRHF";
-import ErrorMessage from "@/components/ErrorMessage";
 import { TooltipHelp } from "@/components/TooltipHelp";
 import { toast } from "sonner";
 
@@ -324,47 +321,33 @@ function CostOfLiving({
             label="After tax investments"
             type="money"
           />
-          <div className="md:col-span-2">
-            <DataTable
-              data={expenses}
-              columns={expenseColumns}
-              setValue={(name, value) => {
-                // this is kinda dumb
-                form.setValue(
-                  name as
-                    | `expenses.${number}.category`
-                    | `expenses.${number}.amount`
-                    | `expenses.${number}.name`,
-                  value,
-                );
-              }}
-              deleteRow={(rowIndex: number) => {
-                const expenses = form.getValues("expenses");
-                form.setValue(
-                  "expenses",
-                  expenses.filter((_, i) => i != rowIndex),
-                );
-              }}
-            />
-            <Button
-              size={"sm"}
-              variant={"outline"}
-              type="button"
-              className="w-full"
-              onClick={() => {
-                const expenses = form.getValues("expenses");
-                form.setValue("expenses", [
-                  ...expenses,
-                  {
-                    name: `Expense ${expenses.length + 1}`,
-                    amount: 100,
-                    category: "Miscellaneous",
-                  },
-                ]);
-              }}
-            >
-              <PlusIcon />
-            </Button>
+          <div />
+          <div className="md:col-span-2">Expenses</div>
+          <InputRHF
+            form={form}
+            formKey="expenses.0.amount"
+            label="Housing"
+            type="money"
+          />
+          <InputRHF
+            form={form}
+            formKey="expenses.1.amount"
+            label="Transportation"
+            type="money"
+          />
+          <InputRHF
+            form={form}
+            formKey="expenses.2.amount"
+            label="Other"
+            type="money"
+          />
+          <InputRHF
+            form={form}
+            formKey="expenses.3.amount"
+            label="Fixed"
+            type="money"
+          />
+          <div className="flex flex-col md:col-span-2">
             <p className="text-sm text-muted-foreground text-right">
               Total expenses: {formatMoney(totalMoExpenses)}/mo
             </p>
@@ -379,7 +362,6 @@ function CostOfLiving({
               </>
             )}
           </div>
-          <ErrorMessage message={form.formState.errors?.expenses?.message} />
           <div className="flex items-center justify-between md:col-span-2">
             <Button variant="outline" onClick={resetDefaults} type="button">
               Reset
@@ -414,14 +396,10 @@ const STORAGE = {
       rothIRAContribution: 7_000,
       afterTaxInvestments: 0,
       expenses: [
-        { name: "Rent", amount: 1_000, category: "Housing" },
-        { name: "Food", amount: 300, category: "Grocery" },
-        { name: "Resturaunt", amount: 300, category: "Grocery" },
-        { name: "Utilities", amount: 75, category: "Utilities" },
+        { name: "Rent", amount: 1_500, category: "Housing" },
         { name: "Car", amount: 500, category: "Transportation" },
-        { name: "Entertainment", amount: 500, category: "Miscellaneous" },
-        { name: "Travel", amount: 500, category: "Miscellaneous" },
-        { name: "Misc", amount: 500, category: "Miscellaneous" },
+        { name: "Other", amount: 2_500, category: "Miscellaneous" },
+        { name: "Fixed", amount: 500, category: "Fixed" },
       ],
     } as CostOfLiving,
   },

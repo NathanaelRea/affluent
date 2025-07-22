@@ -198,9 +198,6 @@ export type IdName = {
 export const CATEGORIES = [
   "Housing",
   "Transportation",
-  "Grocery",
-  "Utilities",
-  "Healthcare",
   "Miscellaneous",
   "Fixed",
 ] as const;
