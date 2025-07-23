@@ -66,29 +66,10 @@ export type Tax =
     }
   | undefined;
 
-type RangeBased = {
-  low: number;
-  high: number;
-};
-
 export type FedLimits = {
   standardDeduction: number;
   socialSecurity: number;
   medicare: number;
-  fourOhOneKContribution: {
-    limit: number;
-    catchupContribution50: number;
-    catchupContribution60: number;
-  };
-  hsaMaxContribution: {
-    contribution: StatusBased<number>;
-    catchupContribution: number;
-  };
-  rothIRAMaxContribution: {
-    range: StatusBased<RangeBased>;
-    limit: number;
-    catchupContribution: number;
-  };
   rates: Tax;
 };
 
@@ -205,7 +186,3 @@ export type Category = (typeof CATEGORIES)[number];
 export const categoryScheama = z.enum(CATEGORIES);
 
 export type CostOfLivingCategory = Exclude<Category, "Fixed">;
-
-export const AGES = ["< 50", ">= 50, < 55", ">= 55"] as const;
-export type Age = (typeof AGES)[number];
-export const agesSchema = z.enum(AGES);
