@@ -177,7 +177,7 @@ function CostOfLiving({
                   Net take home: {formatMoney(netTakeHome / 12)}/mo
                 </p>
                 <p className="text-sm text-muted-foreground text-right">
-                  Savings Rate: {formatPercent(savingsRate)}
+                  = Savings Rate: {formatPercent(savingsRate)}
                 </p>
               </>
             )}
@@ -368,7 +368,7 @@ function ResultSub({
         <span className="text-sm text-muted-foreground">Required Income</span>
         <h2 className="text-2xl">{formatMoney(convertedData.salary)}</h2>
         <p className="text-xs text-muted-foreground text-right">
-          To maintain the same net take home and savings rate
+          To maintain the same net take home
         </p>
       </div>
       <h3>Taxes</h3>
