@@ -95,28 +95,6 @@ export const FED_LIMITS: FedLimits = {
   standardDeduction: 12_550,
   socialSecurity: 0.062,
   medicare: 0.0145,
-  fourOhOneKContribution: {
-    limit: 23_000,
-    catchupContribution50: 7_500,
-    catchupContribution60: 0,
-  },
-  hsaMaxContribution: {
-    contribution: {
-      Single: 4_150,
-      Married: 8_300,
-      "Head of Household": 8_300,
-    },
-    catchupContribution: 1_000,
-  },
-  rothIRAMaxContribution: {
-    range: {
-      Single: { low: 146_000, high: 161_000 },
-      Married: { low: 230_000, high: 240_000 },
-      "Head of Household": { low: 146_000, high: 161_000 },
-    },
-    limit: 7_000,
-    catchupContribution: 1_000,
-  },
   rates: {
     type: "status-based",
     status: {
