@@ -266,22 +266,22 @@ function Results({ data }: { data: CostOfLiving }) {
   function addCustomHousing() {
     const remoteRent = data.expenses.housing;
     setCustomHousing(Math.round(remoteRent));
-    save();
+    save(remoteRent);
   }
 
   function removeCustomHousing() {
     setCustomHousing(undefined);
-    save();
+    save(undefined);
   }
 
   function updateCustomHousing(v: number) {
     setCustomHousing(v);
-    save();
+    save(v);
   }
 
-  function save() {
-    if (customHousing) {
-      cityHousing[remoteCity] = customHousing;
+  function save(v: number | undefined) {
+    if (v) {
+      cityHousing[remoteCity] = v;
       saveToLocalStorage(STORAGE.cityHousing, cityHousing);
     } else {
       delete cityHousing[remoteCity];
@@ -411,7 +411,7 @@ function convertCOLAndFindSalary(
   const localSavingsRate = calculateNetTakeHomePay(data).savingsRate;
   const remoteSalaryNeeded = secantMethod(
     blackBox(newData, localSavingsRate),
-    0,
+    1,
     1_000_000,
   );
 
@@ -427,7 +427,8 @@ function blackBox(formBase: CostOfLiving, target: number) {
       salary: x,
     };
     const newSavings = calculateNetTakeHomePay(newForm).savingsRate;
-    return (newSavings - target) * formBase.salary;
+    const requiredSalary = (newSavings - target) * x;
+    return requiredSalary;
   };
 }
 
@@ -638,7 +639,7 @@ function calculateNetTakeHomePay(data: CostOfLiving) {
     medicare -
     expenses;
 
-  const savingsRate = Math.max(0, netTakeHome / data.salary);
+  const savingsRate = netTakeHome / data.salary;
 
   return {
     netTakeHome,
