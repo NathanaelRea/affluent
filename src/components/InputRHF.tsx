@@ -17,7 +17,7 @@ type InputRHFProps<T extends FieldValues> = {
   formKey: Path<T>;
   label?: ReactNode;
   placeholder?: string;
-  type?: FormatType;
+  type?: FormatType | "number";
 };
 export function InputRHF<T extends FieldValues>({
   form,
@@ -34,7 +34,15 @@ export function InputRHF<T extends FieldValues>({
         <FormItem>
           {label && <FormLabel>{label}</FormLabel>}
           <FormControl>
-            {type ? (
+            {type == "number" ? (
+              <Input
+                type="number"
+                {...field}
+                onChange={(e) =>
+                  field.onChange(parseIntDefault(e.target.value))
+                }
+              />
+            ) : type ? (
               <InputWithFormat
                 value={field.value}
                 onChange={field.onChange}
@@ -51,6 +59,14 @@ export function InputRHF<T extends FieldValues>({
       )}
     />
   );
+}
+
+function parseIntDefault(value: string | undefined) {
+  if (value == undefined || value === "") {
+    return undefined;
+  }
+  const maybeNaN = parseInt(value);
+  return isNaN(maybeNaN) ? undefined : maybeNaN;
 }
 
 function formatValue(value: number, type: FormatType): string {
@@ -87,9 +103,9 @@ type InputWithFormatProps = {
 
 function valueAsString(value: number, type: FormatType) {
   if (type == "percentage") {
-    return (value * 100).toString();
+    return (value * 100).toFixed(2);
   }
-  return value.toString();
+  return value.toFixed();
 }
 
 export function InputWithFormat({
@@ -127,7 +143,7 @@ export function InputWithFormat({
 
   return (
     <Input
-      type="text"
+      type={isEditing ? "number" : "text"}
       value={isEditing ? inputValue : formatValue(value, type)}
       onFocus={handleFocus}
       onBlur={handleBlur}
