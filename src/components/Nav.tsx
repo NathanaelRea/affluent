@@ -1,4 +1,4 @@
-import { Link } from "@tanstack/react-router";
+import { Link, LinkProps } from "@tanstack/react-router";
 import {
   NavigationMenu,
   NavigationMenuList,
@@ -7,15 +7,14 @@ import {
   NavigationMenuContent,
   NavigationMenuTrigger,
 } from "./ui/navigation-menu.tsx";
-import React from "react";
 import { cn } from "../lib/utils.ts";
 
-type Component = {
+type LinkMeta = {
   title: string;
-  href: string;
+  href: LinkProps["to"];
   description: string;
 };
-const components: Component[] = [
+const components: LinkMeta[] = [
   {
     title: "Cost of Living",
     href: "/cost-of-living",
@@ -26,6 +25,11 @@ const components: Component[] = [
     title: "Monete Carlo SWR",
     href: "/monte-carlo-swr",
     description: "Simulate a portfolio with custom funds and withdraw rate.",
+  },
+  {
+    title: "Coast Fire",
+    href: "/coast-fire",
+    description: "Calculate time until coast fire, and beyond.",
   },
 ];
 
@@ -38,13 +42,7 @@ export function NavMenu() {
           <NavigationMenuContent>
             <ul className="grid w-[400px] gap-3 p-4 md:w-[500px] md:grid-cols-2 lg:w-[600px] ">
               {components.map((component) => (
-                <ListItem
-                  key={component.title}
-                  title={component.title}
-                  href={component.href}
-                >
-                  {component.description}
-                </ListItem>
+                <ListItem key={component.href} {...component} />
               ))}
             </ul>
           </NavigationMenuContent>
@@ -54,28 +52,22 @@ export function NavMenu() {
   );
 }
 
-const ListItem = React.forwardRef<
-  React.ElementRef<"a">,
-  React.ComponentPropsWithoutRef<"a">
->(({ className, title, children, ...props }, ref) => {
+function ListItem({ title, href, description }: LinkMeta) {
   return (
     <li>
       <NavigationMenuLink asChild>
         <Link
-          ref={ref}
           className={cn(
             "block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground",
-            className,
           )}
-          {...props}
-          to={props.href!}
+          to={href}
         >
           <div className="text-sm font-medium leading-none">{title}</div>
           <p className="line-clamp-2 text-sm leading-snug text-muted-foreground">
-            {children}
+            {description}
           </p>
         </Link>
       </NavigationMenuLink>
     </li>
   );
-});
+}
