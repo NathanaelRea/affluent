@@ -79,24 +79,23 @@ function formatValue(value: number, type: FormatType): string {
   }
 }
 
-function parseValue(input: string, type: FormatType): number | undefined {
-  const parsed = parseRaw(input);
+function parseValue(input: string, type: FormatType): number {
   switch (type) {
     case "money":
-      return parsed;
+      return parseRaw(input);
     case "percentage":
-      return parsed ? parsed / 100 : undefined;
+      return parseRaw(input) / 100;
   }
 }
 
 function parseRaw(input: string) {
   const parsed = parseFloat(input.replace(/[^0-9.-]/g, ""));
-  return isNaN(parsed) ? undefined : parsed;
+  return isNaN(parsed) ? 0 : parsed;
 }
 
 type InputWithFormatProps = {
   value: number;
-  onChange: (_: number | undefined) => void;
+  onChange: (value: number) => void;
   onBlur: () => void;
   type: FormatType;
   placeholder?: string;
