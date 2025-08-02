@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as MonteCarloSwrRouteImport } from './routes/monte-carlo-swr'
 import { Route as CostOfLivingRouteImport } from './routes/cost-of-living'
+import { Route as CoastFireRouteImport } from './routes/coast-fire'
 import { Route as IndexRouteImport } from './routes/index'
 
 const MonteCarloSwrRoute = MonteCarloSwrRouteImport.update({
@@ -23,6 +24,11 @@ const CostOfLivingRoute = CostOfLivingRouteImport.update({
   path: '/cost-of-living',
   getParentRoute: () => rootRouteImport,
 } as any)
+const CoastFireRoute = CoastFireRouteImport.update({
+  id: '/coast-fire',
+  path: '/coast-fire',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
@@ -31,30 +37,34 @@ const IndexRoute = IndexRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/coast-fire': typeof CoastFireRoute
   '/cost-of-living': typeof CostOfLivingRoute
   '/monte-carlo-swr': typeof MonteCarloSwrRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/coast-fire': typeof CoastFireRoute
   '/cost-of-living': typeof CostOfLivingRoute
   '/monte-carlo-swr': typeof MonteCarloSwrRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/coast-fire': typeof CoastFireRoute
   '/cost-of-living': typeof CostOfLivingRoute
   '/monte-carlo-swr': typeof MonteCarloSwrRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/cost-of-living' | '/monte-carlo-swr'
+  fullPaths: '/' | '/coast-fire' | '/cost-of-living' | '/monte-carlo-swr'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/cost-of-living' | '/monte-carlo-swr'
-  id: '__root__' | '/' | '/cost-of-living' | '/monte-carlo-swr'
+  to: '/' | '/coast-fire' | '/cost-of-living' | '/monte-carlo-swr'
+  id: '__root__' | '/' | '/coast-fire' | '/cost-of-living' | '/monte-carlo-swr'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  CoastFireRoute: typeof CoastFireRoute
   CostOfLivingRoute: typeof CostOfLivingRoute
   MonteCarloSwrRoute: typeof MonteCarloSwrRoute
 }
@@ -75,6 +85,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof CostOfLivingRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/coast-fire': {
+      id: '/coast-fire'
+      path: '/coast-fire'
+      fullPath: '/coast-fire'
+      preLoaderRoute: typeof CoastFireRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/': {
       id: '/'
       path: '/'
@@ -87,6 +104,7 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  CoastFireRoute: CoastFireRoute,
   CostOfLivingRoute: CostOfLivingRoute,
   MonteCarloSwrRoute: MonteCarloSwrRoute,
 }
