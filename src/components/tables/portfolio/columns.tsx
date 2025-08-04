@@ -6,9 +6,9 @@ import { InputWithFormat } from "@/components/InputRHF";
 
 export const fundSchema = z.object({
   name: z.string(),
-  mean: z.coerce.number().min(0).max(1, "Maximum of 100%"),
-  std: z.coerce.number().min(0).max(1, "Maximum of 100%"),
-  weight: z.coerce.number().min(0).max(1, "Maximum of 100%"),
+  mean: z.number().min(0).max(1, "Maximum of 100%"),
+  std: z.number().min(0).max(1, "Maximum of 100%"),
+  weight: z.number().min(0).max(1, "Maximum of 100%"),
 });
 export type Fund = z.infer<typeof fundSchema>;
 

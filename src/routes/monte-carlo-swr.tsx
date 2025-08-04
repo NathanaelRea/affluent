@@ -35,11 +35,11 @@ type Simulation = {
 
 const formSchema = z
   .object({
-    years: z.coerce.number(),
-    simCount: z.coerce.number().max(200, ">200 is a bit slow for recharts"),
-    initialInvestment: z.coerce.number(),
-    inflation: z.coerce.number().min(0).max(1, "Maximum of 100%"),
-    withdrawRate: z.coerce.number().min(0).max(1, "Maximum of 100%"),
+    years: z.number(),
+    simCount: z.number().max(200, ">200 is a bit slow for recharts"),
+    initialInvestment: z.number(),
+    inflation: z.number().min(0).max(1, "Maximum of 100%"),
+    withdrawRate: z.number().min(0).max(1, "Maximum of 100%"),
     portfolio: z.array(fundSchema),
   })
   .superRefine((data, ctx) => {
@@ -51,9 +51,8 @@ const formSchema = z
     if (Math.abs(weightTotal - 1) > tol) {
       ctx.addIssue({
         message: `Portfolio weights must sum to 100%`,
-        path: ["portfolio"],
-        code: "invalid_arguments",
-        argumentsError: new z.ZodError([]),
+        code: "custom",
+        origin: "portfolio",
       });
     }
   });
