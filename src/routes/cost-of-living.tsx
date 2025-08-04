@@ -45,12 +45,12 @@ const costOfLivingSchema = z
   .object({
     city: citySchema,
     status: taxStatusSchema,
-    salary: z.coerce.number(),
+    salary: z.number(),
     expenses: z.object({
-      housing: z.coerce.number(),
-      transportaiton: z.coerce.number(),
-      miscellaneous: z.coerce.number(),
-      fixed: z.coerce.number(),
+      housing: z.number(),
+      transportaiton: z.number(),
+      miscellaneous: z.number(),
+      fixed: z.number(),
     }),
   })
   .superRefine((data, ctx) => {
@@ -59,10 +59,8 @@ const costOfLivingSchema = z
     if (modifiedAGI - totalExpenses < 0) {
       ctx.addIssue({
         message: `Expenses and investments cannot exceed modified gross income (${formatMoney(modifiedAGI)}).`,
-        path: ["expenses"],
-        code: "invalid_arguments",
-        fatal: true,
-        argumentsError: new z.ZodError([]),
+        code: "custom",
+        origin: "expenses",
       });
     }
   });
