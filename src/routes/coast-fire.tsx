@@ -77,56 +77,60 @@ function RouteComponent() {
         <CardContent>
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-              <Tabs defaultValue="basic" className="w-full max-w-md">
+              <Tabs defaultValue="basic" className="w-full">
                 <TabsList>
                   <TabsTrigger value="basic">Basic</TabsTrigger>
                   <TabsTrigger value="advanced">Advanced</TabsTrigger>
                 </TabsList>
-                <TabsContent value="basic" className="space-y-3">
-                  <InputRHF
-                    form={form}
-                    type="number"
-                    formKey="age"
-                    label="Age"
-                  />
-                  <InputRHF
-                    form={form}
-                    type="number"
-                    formKey="retirementAge"
-                    label="Retirement Age"
-                  />
-                  <InputRHF
-                    form={form}
-                    type="money"
-                    formKey="retirementSpend"
-                    label="Retirement spend"
-                  />
-                  <InputRHF
-                    form={form}
-                    type="money"
-                    formKey="currentInvested"
-                    label="Current Invested"
-                  />
-                  <InputRHF
-                    form={form}
-                    type="money"
-                    formKey="monthlyContribution"
-                    label="Monthly Contribution"
-                  />
-                  <InputRHF
-                    form={form}
-                    type="percentage"
-                    formKey="safeWithdrawRate"
-                    label="Safe Withdraw Rate"
-                  />
+                <TabsContent value="basic" className="transition-all">
+                  <div className="mx-auto w-full max-w-3xl grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <InputRHF
+                      form={form}
+                      type="number"
+                      formKey="age"
+                      label="Age"
+                    />
+                    <InputRHF
+                      form={form}
+                      type="number"
+                      formKey="retirementAge"
+                      label="Retirement Age"
+                    />
+                    <InputRHF
+                      form={form}
+                      type="money"
+                      formKey="retirementSpend"
+                      label="Retirement spend"
+                    />
+                    <InputRHF
+                      form={form}
+                      type="money"
+                      formKey="currentInvested"
+                      label="Current Invested"
+                    />
+                    <InputRHF
+                      form={form}
+                      type="money"
+                      formKey="monthlyContribution"
+                      label="Monthly Contribution"
+                    />
+                    <InputRHF
+                      form={form}
+                      type="percentage"
+                      formKey="safeWithdrawRate"
+                      label="Safe Withdraw Rate"
+                    />
+                  </div>
                 </TabsContent>
-                <TabsContent value="advanced" className="space-y-3">
-                  <InputRHF
-                    form={form}
-                    type="percentage"
-                    formKey="equityPremium"
-                    label="Equity Premium"
-                  />
+                <TabsContent value="advanced" className="transition-all">
+                  <div className="mx-auto w-full max-w-3xl grid grid-cols-1 gap-4">
+                    <InputRHF
+                      form={form}
+                      type="percentage"
+                      formKey="equityPremium"
+                      label="Equity Premium"
+                    />
+                  </div>
                 </TabsContent>
               </Tabs>
             </form>
@@ -178,7 +182,7 @@ export default function CoastFireChart({ data }: { data: CoastFireForm }) {
   return (
     <div className="space-y-6">
       {chartData.length > 0 && (
-        <Card>
+        <Card className="transition-all data-[size=expanded]:shadow-lg">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               Coast FIRE Projection

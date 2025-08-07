@@ -174,7 +174,7 @@ function Monte() {
                 >
                   <Button
                     type="button"
-                    variant="outline"
+                    variant="ghost"
                     size="sm"
                     className="w-full"
                   >
@@ -197,7 +197,19 @@ function Monte() {
           </Form>
         </CardContent>
       </Card>
-      {parsedData && <Chart parsedData={parsedData} />}
+      {parsedData && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-xl">Simulation results</CardTitle>
+            <CardDescription>
+              Aggregate outcomes and distribution
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Chart parsedData={parsedData} />
+          </CardContent>
+        </Card>
+      )}
     </>
   );
 }
@@ -240,15 +252,33 @@ function Chart({ parsedData }: { parsedData: ParsedData }) {
 
   return (
     <>
-      <div>
-        <div>
-          Number of bankrupt simulations: {simBankruptMap.size} (
-          {percentFormatter.format(simBankruptMap.size / simCount)})
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-3 mb-3">
+        <div className="rounded-lg border p-3 bg-card/50">
+          <div className="text-xs text-muted-foreground">Bankrupt Sims</div>
+          <div className="text-lg font-semibold">
+            {simBankruptMap.size}
+            <span className="text-sm text-muted-foreground ml-2">
+              ({percentFormatter.format(simBankruptMap.size / simCount)})
+            </span>
+          </div>
         </div>
-        <div>Average terminal value: {formatMoney(lastYearData.value)}</div>
-        <div>Median terminal value: {formatMoney(lastYearData.median)}</div>
-        <div>
-          10th percentile terminal value: {formatMoney(lastYearData.tenth)}
+        <div className="rounded-lg border p-3 bg-card/50">
+          <div className="text-xs text-muted-foreground">Average Terminal</div>
+          <div className="text-lg font-semibold">
+            {formatMoney(lastYearData.value)}
+          </div>
+        </div>
+        <div className="rounded-lg border p-3 bg-card/50">
+          <div className="text-xs text-muted-foreground">Median Terminal</div>
+          <div className="text-lg font-semibold">
+            {formatMoney(lastYearData.median)}
+          </div>
+        </div>
+        <div className="rounded-lg border p-3 bg-card/50">
+          <div className="text-xs text-muted-foreground">10th Percentile</div>
+          <div className="text-lg font-semibold">
+            {formatMoney(lastYearData.tenth)}
+          </div>
         </div>
       </div>
       <ChartContainer config={chartConfig} ref={chartRef}>

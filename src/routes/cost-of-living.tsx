@@ -118,7 +118,7 @@ function CostOfLiving({
 
   return (
     <>
-      <Card>
+      <Card className="animate-in fade-in-0 zoom-in-95">
         <CardHeader>
           <CardTitle className="text-2xl">Cost of Living Calculator</CardTitle>
           <CardDescription>
@@ -309,7 +309,7 @@ function Results({ data }: { data: CostOfLiving }) {
 
   return (
     <div className="flex flex-col gap-4" ref={resultsRef}>
-      <Card>
+      <Card className="animate-in fade-in-0 zoom-in-95">
         <CardHeader>
           <CardTitle>Compare to Another City</CardTitle>
           <CardDescription>
