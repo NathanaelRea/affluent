@@ -70,7 +70,7 @@ function RouteComponent() {
 
   return (
     <>
-      <Card className="overflow-hidden transition-all duration-300">
+      <Card className="overflow-hidden">
         <CardHeader>
           <CardTitle className="text-2xl">Coast FIRE Calculator</CardTitle>
           <CardDescription>Calculate when you can Coast FIRE.</CardDescription>
@@ -220,7 +220,7 @@ function RouteComponent() {
           </Button>
         </CardContent>
       </Card>
-      {data && <CoastFireChart data={data} />}
+      {data && <CoastFireChart key={JSON.stringify(data)} data={data} />}
     </>
   );
 }
@@ -232,7 +232,7 @@ interface ChartDataPoint {
   withContributions: number;
 }
 
-export default function CoastFireChart({ data }: { data: CoastFireForm }) {
+function CoastFireChart({ data }: { data: CoastFireForm }) {
   const {
     points: chartData,
     isCoastFire,
