@@ -1,5 +1,13 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Form } from "@/components/ui/form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -110,86 +118,96 @@ function CostOfLiving({
 
   return (
     <>
-      <h1 className="text-2xl">Cost of living calculator</h1>
-      <h2 className="text-gray-400 text-pretty">
-        Compare cost of living between cities with in depth analysis. Using
-        (federal/state/city) taxes, category based cost of living adjustments,
-        and more!
-      </h2>
-      <Form {...form}>
-        <form
-          onSubmit={form.handleSubmit(onSubmit)}
-          className="grid grid-cols-1 md:grid-cols-2 gap-4 py-8"
-        >
-          <ComboboxRHF
-            form={form}
-            formKey="status"
-            label="Filing Status"
-            items={TAX_STATUS.map((status) => ({
-              value: status,
-              label: status,
-            }))}
-          />
-          <ComboboxRHF
-            form={form}
-            formKey="city"
-            label="City"
-            items={CITIES.map((c) => ({
-              label: `${c}, ${STATE_INFO[CITY_INFO[c].state].abbreviation}`,
-              value: c,
-            }))}
-          />
-          <InputRHF form={form} formKey="salary" label="Salary" type="money" />
-          <div className="md:col-span-2">Expenses</div>
-          <InputRHF
-            form={form}
-            formKey="expenses.housing"
-            label="Housing"
-            type="money"
-          />
-          <InputRHF
-            form={form}
-            formKey="expenses.transportaiton"
-            label="Transportation"
-            type="money"
-          />
-          <InputRHF
-            form={form}
-            formKey="expenses.miscellaneous"
-            label="Other"
-            type="money"
-          />
-          <InputRHF
-            form={form}
-            formKey="expenses.fixed"
-            label="Fixed"
-            type="money"
-          />
-          <div className="flex flex-col md:col-span-2">
-            {data && (
-              <>
-                <p className="text-sm text-muted-foreground text-right">
-                  Total expenses: {formatMoney(totalMoExpenses)}/mo
-                </p>
-                <p className="text-sm text-muted-foreground text-right">
-                  Net take home: {formatMoney(netTakeHome / 12)}/mo
-                </p>
-                <p className="text-sm text-muted-foreground text-right">
-                  = Savings Rate: {formatPercent(savingsRate)}
-                </p>
-              </>
-            )}
-          </div>
-          <div className="flex items-center justify-between md:col-span-2">
-            <Button variant="outline" onClick={resetDefaults} type="button">
-              Reset
-            </Button>
-            <Button type="submit" onClick={form.handleSubmit(onSubmit)}>
-              Submit
-            </Button>
-          </div>
-        </form>
-      </Form>
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-2xl">Cost of Living Calculator</CardTitle>
+          <CardDescription>
+            Compare two cities with detailed tax and expense adjustments to see
+            what salary maintains your current lifestyle.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Form {...form}>
+            <form
+              onSubmit={form.handleSubmit(onSubmit)}
+              className="grid grid-cols-1 md:grid-cols-2 gap-4"
+            >
+              <ComboboxRHF
+                form={form}
+                formKey="status"
+                label="Filing Status"
+                items={TAX_STATUS.map((status) => ({
+                  value: status,
+                  label: status,
+                }))}
+              />
+              <ComboboxRHF
+                form={form}
+                formKey="city"
+                label="City"
+                items={CITIES.map((c) => ({
+                  label: `${c}, ${STATE_INFO[CITY_INFO[c].state].abbreviation}`,
+                  value: c,
+                }))}
+              />
+              <InputRHF
+                form={form}
+                formKey="salary"
+                label="Salary"
+                type="money"
+              />
+              <div className="md:col-span-2 font-medium">Expenses</div>
+              <InputRHF
+                form={form}
+                formKey="expenses.housing"
+                label="Housing"
+                type="money"
+              />
+              <InputRHF
+                form={form}
+                formKey="expenses.transportaiton"
+                label="Transportation"
+                type="money"
+              />
+              <InputRHF
+                form={form}
+                formKey="expenses.miscellaneous"
+                label="Other"
+                type="money"
+              />
+              <InputRHF
+                form={form}
+                formKey="expenses.fixed"
+                label="Fixed"
+                type="money"
+              />
+              {data && (
+                <div className="md:col-span-2 flex flex-col items-end gap-1 mt-2">
+                  <p className="text-sm text-muted-foreground">
+                    Total expenses: {formatMoney(totalMoExpenses)}/mo
+                  </p>
+                  <p className="text-sm text-muted-foreground">
+                    Net take home: {formatMoney(netTakeHome / 12)}/mo
+                  </p>
+                  <p className="text-sm text-muted-foreground">
+                    Savings Rate: {formatPercent(savingsRate)}
+                  </p>
+                </div>
+              )}
+              <div className="md:col-span-2" />
+            </form>
+          </Form>
+        </CardContent>
+        <CardFooter className="justify-between">
+          <Button variant="outline" onClick={resetDefaults} type="button">
+            Reset
+          </Button>
+          <Button type="submit" onClick={form.handleSubmit(onSubmit)}>
+            Calculate
+          </Button>
+        </CardFooter>
+      </Card>
+
       {data && <Results data={data} />}
     </>
   );
@@ -287,101 +305,100 @@ function Results({ data }: { data: CostOfLiving }) {
     }
   }
 
+  const convertedData = convertCOLAndFindSalary(data, remoteCity, cityHousing);
+
   return (
-    <div className="flex flex-col gap-2" ref={resultsRef}>
-      <div className="flex justify-center w-full">
-        <div className="w-full md:w-1/2 flex flex-col gap-4">
-          <label>Comparison City</label>
-          <div>
-            <Combobox
-              name="city"
-              items={CITIES.map((c) => ({
-                label: `${c}, ${STATE_INFO[CITY_INFO[c].state].abbreviation}`,
-                value: c,
-              }))}
-              value={remoteCity}
-              setValue={(c) => handleCity(c as City)}
-            />
-          </div>
-          <div className="flex flex-col">
-            <label>
-              <TooltipHelp text="There could be a 5x cost of living adjustment for housing (e.g. LOC <-> VHCOL), however in that case you will probably downsize/rightsize.">
-                Custom City Housing
-              </TooltipHelp>
-            </label>
-            {customHousing ? (
-              <div className="flex gap-2 items-center">
-                <InputWithFormat
-                  value={customHousing}
-                  onChange={updateCustomHousing}
-                  onBlur={() => {}}
-                  type="money"
-                />
+    <div className="flex flex-col gap-4" ref={resultsRef}>
+      <Card>
+        <CardHeader>
+          <CardTitle>Compare to Another City</CardTitle>
+          <CardDescription>
+            Choose a destination city and optionally override its housing cost.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="w-full md:w-1/2 flex flex-col gap-4">
+            <div>
+              <label className="mb-1 block text-sm font-medium">City</label>
+              <Combobox
+                name="city"
+                items={CITIES.map((c) => ({
+                  label: `${c}, ${STATE_INFO[CITY_INFO[c].state].abbreviation}`,
+                  value: c,
+                }))}
+                value={remoteCity}
+                setValue={(c) => handleCity(c as City)}
+              />
+            </div>
+            <div className="flex flex-col">
+              <label className="mb-1 block text-sm font-medium">
+                <TooltipHelp text="There could be a 5x cost of living adjustment for housing (e.g. LOC <-> VHCOL), however in that case you will probably downsize/rightsize.">
+                  Custom City Housing
+                </TooltipHelp>
+              </label>
+              {customHousing ? (
+                <div className="flex gap-2 items-center">
+                  <InputWithFormat
+                    value={customHousing}
+                    onChange={updateCustomHousing}
+                    onBlur={() => {}}
+                    type="money"
+                  />
+                  <Button
+                    type="button"
+                    variant={"outline"}
+                    size="sm"
+                    onClick={removeCustomHousing}
+                  >
+                    <MinusIcon />
+                  </Button>
+                </div>
+              ) : (
                 <Button
                   type="button"
                   variant={"outline"}
                   size="sm"
-                  onClick={removeCustomHousing}
+                  onClick={addCustomHousing}
+                  className="w-fit"
                 >
-                  <MinusIcon />
+                  <PlusIcon />
                 </Button>
-              </div>
-            ) : (
-              <Button
-                type="button"
-                variant={"outline"}
-                size="sm"
-                onClick={addCustomHousing}
-              >
-                <PlusIcon />
-              </Button>
-            )}
+              )}
+            </div>
           </div>
-        </div>
-      </div>
-      <ResultSub
-        key={`${remoteCity}${customHousing}`}
-        data={data}
-        remoteCity={remoteCity}
-        cityHousing={cityHousing}
-      />
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader className="items-end">
+          <CardDescription>Required Income</CardDescription>
+          <CardTitle className="text-2xl">
+            {formatMoney(convertedData.salary)}
+          </CardTitle>
+          <p className="text-xs text-muted-foreground">
+            To maintain the same net take home
+          </p>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          <div className="space-y-2">
+            <h3 className="text-base font-medium">Taxes</h3>
+            <MoneyBarChart
+              localCity={data.city}
+              remoteCity={convertedData.city}
+              chartData={calculateTaxesChartData(data, convertedData)}
+            />
+          </div>
+          <div className="space-y-2">
+            <h3 className="text-base font-medium">Expenses</h3>
+            <MoneyBarChart
+              localCity={data.city}
+              remoteCity={convertedData.city}
+              chartData={calculateExpensesChartData(data, convertedData)}
+            />
+          </div>
+        </CardContent>
+      </Card>
     </div>
-  );
-}
-
-function ResultSub({
-  data,
-  remoteCity,
-  cityHousing,
-}: {
-  data: CostOfLiving;
-  remoteCity: City;
-  cityHousing: CityHousing;
-}) {
-  const convertedData = convertCOLAndFindSalary(data, remoteCity, cityHousing);
-
-  return (
-    <>
-      <div className="flex flex-col items-end justify-end">
-        <span className="text-sm text-muted-foreground">Required Income</span>
-        <h2 className="text-2xl">{formatMoney(convertedData.salary)}</h2>
-        <p className="text-xs text-muted-foreground text-right">
-          To maintain the same net take home
-        </p>
-      </div>
-      <h3>Taxes</h3>
-      <MoneyBarChart
-        localCity={data.city}
-        remoteCity={convertedData.city}
-        chartData={calculateTaxesChartData(data, convertedData)}
-      />
-      <h3>Expenses</h3>
-      <MoneyBarChart
-        localCity={data.city}
-        remoteCity={convertedData.city}
-        chartData={calculateExpensesChartData(data, convertedData)}
-      />
-    </>
   );
 }
 

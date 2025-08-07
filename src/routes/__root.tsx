@@ -1,6 +1,7 @@
 import { createRootRoute, Link, Outlet } from "@tanstack/react-router";
 import { TanStackRouterDevtools } from "@tanstack/react-router-devtools";
 import { NavMenu } from "@/components/Nav";
+import { ModeToggle } from "@/components/mode-toggle";
 import { ThemeProvider } from "@/components/theme-provider";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "sonner";
@@ -12,32 +13,38 @@ export const Route = createRootRoute({
     <ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">
       <QueryClientProvider client={queryClient}>
         <div className="flex flex-col h-full min-h-screen">
-          <nav className="border-b-2 border-cyan-900 flex justify-center py-2 px-6">
-            <div className="flex justify-between items-center max-w-2xl w-full">
+          <nav className="sticky top-0 z-50 border-b backdrop-blur supports-[backdrop-filter]:bg-background/60 bg-background/80">
+            <div className="mx-auto flex items-center justify-between gap-3 px-4 py-3 w-full max-w-5xl">
               <Link to="/">
-                <span className="font-semibold text-lg text-transparent bg-clip-text bg-gradient-to-r from-emerald-500 to-sky-500">
+                <span className="font-semibold text-lg tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-sky-400">
                   Affluent
                 </span>
               </Link>
-              <NavMenu />
+              <div className="flex items-center gap-2">
+                <NavMenu />
+                <ModeToggle />
+              </div>
             </div>
           </nav>
           <div className="flex-grow">
-            <div className="flex flex-col justify-center items-center p-4 h-full">
-              <main className="flex flex-col max-w-2xl w-full">
+            <div className="flex flex-col justify-center items-center p-6 h-full">
+              <main className="flex flex-col gap-6 w-full max-w-5xl">
                 <Outlet />
               </main>
             </div>
           </div>
-          <footer className="border-t-2 border-cyan-900 flex justify-center py-2">
-            <div className="flex items-center justify-center gap-2">
-              <div className="h-4 w-4">
-                <a href="https://github.com/nathanaelrea/affluent">
-                  <GithubIcon />
-                </a>
-              </div>
-              <span className="text-xs font-semibold text-muted-foreground">
-                For informational purposes only. Data is only stored locally.
+          <footer className="border-t">
+            <div className="mx-auto flex items-center justify-center gap-2 px-4 py-4 max-w-5xl">
+              <a
+                className="inline-flex h-5 w-5 items-center justify-center"
+                href="https://github.com/nathanaelrea/affluent"
+                aria-label="GitHub repository"
+              >
+                <GithubIcon />
+              </a>
+              <span className="text-xs text-muted-foreground">
+                For informational purposes only. Data is stored locally in your
+                browser.
               </span>
             </div>
           </footer>
