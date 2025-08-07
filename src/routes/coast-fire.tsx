@@ -16,7 +16,7 @@ import { Form } from "@/components/ui/form";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { formatMoney } from "@/lib/utils";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { AnimatePresence, motion } from "framer-motion";
 import {
   ChartConfig,
   ChartContainer,
@@ -49,6 +49,7 @@ type CoastFireForm = z.infer<typeof coastFireFormSchema>;
 
 function RouteComponent() {
   const [data, setData] = useState<CoastFireForm | undefined>(undefined);
+  const [tab, setTab] = useState<"basic" | "advanced">("basic");
 
   const form = useForm<CoastFireForm>({
     resolver: zodResolver(coastFireFormSchema),
@@ -69,7 +70,7 @@ function RouteComponent() {
 
   return (
     <>
-      <Card>
+      <Card className="overflow-hidden transition-all duration-300">
         <CardHeader>
           <CardTitle className="text-2xl">Coast FIRE Calculator</CardTitle>
           <CardDescription>Calculate when you can Coast FIRE.</CardDescription>
@@ -77,62 +78,139 @@ function RouteComponent() {
         <CardContent>
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-              <Tabs defaultValue="basic" className="w-full">
-                <TabsList>
-                  <TabsTrigger value="basic">Basic</TabsTrigger>
-                  <TabsTrigger value="advanced">Advanced</TabsTrigger>
-                </TabsList>
-                <TabsContent value="basic" className="transition-all">
-                  <div className="mx-auto w-full max-w-3xl grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <InputRHF
-                      form={form}
-                      type="number"
-                      formKey="age"
-                      label="Age"
-                    />
-                    <InputRHF
-                      form={form}
-                      type="number"
-                      formKey="retirementAge"
-                      label="Retirement Age"
-                    />
-                    <InputRHF
-                      form={form}
-                      type="money"
-                      formKey="retirementSpend"
-                      label="Retirement spend"
-                    />
-                    <InputRHF
-                      form={form}
-                      type="money"
-                      formKey="currentInvested"
-                      label="Current Invested"
-                    />
-                    <InputRHF
-                      form={form}
-                      type="money"
-                      formKey="monthlyContribution"
-                      label="Monthly Contribution"
-                    />
-                    <InputRHF
-                      form={form}
-                      type="percentage"
-                      formKey="safeWithdrawRate"
-                      label="Safe Withdraw Rate"
-                    />
-                  </div>
-                </TabsContent>
-                <TabsContent value="advanced" className="transition-all">
-                  <div className="mx-auto w-full max-w-3xl grid grid-cols-1 gap-4">
-                    <InputRHF
-                      form={form}
-                      type="percentage"
-                      formKey="equityPremium"
-                      label="Equity Premium"
-                    />
-                  </div>
-                </TabsContent>
-              </Tabs>
+              <div className="w-full flex justify-center">
+                <div
+                  role="tablist"
+                  aria-label="Coast FIRE form sections"
+                  className="relative inline-flex items-center gap-1 rounded-full bg-muted p-1"
+                >
+                  {(
+                    [
+                      { id: "basic", label: "Basic" },
+                      { id: "advanced", label: "Advanced" },
+                    ] as const
+                  ).map((t) => {
+                    const isActive = tab === t.id;
+                    return (
+                      <button
+                        type="button"
+                        key={t.id}
+                        role="tab"
+                        aria-selected={isActive}
+                        tabIndex={isActive ? 0 : -1}
+                        onClick={() => setTab(t.id)}
+                        className={
+                          "relative z-10 rounded-full px-3 py-1 text-sm font-medium transition-colors"
+                        }
+                        style={{ WebkitTapHighlightColor: "transparent" }}
+                      >
+                        {isActive && (
+                          <motion.div
+                            layoutId="coast-fire-tab-pill"
+                            className="absolute inset-0 z-[-1] bg-background shadow"
+                            style={{ borderRadius: 9999 }}
+                            transition={{
+                              type: "spring",
+                              stiffness: 500,
+                              damping: 40,
+                            }}
+                          />
+                        )}
+                        <span
+                          className={
+                            isActive
+                              ? "text-foreground"
+                              : "text-muted-foreground"
+                          }
+                        >
+                          {t.label}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+              <AnimatePresence mode="wait">
+                {tab === "basic" ? (
+                  <motion.div
+                    key="basic"
+                    initial={{ opacity: 0, y: 8 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -8 }}
+                    transition={{ duration: 0.2 }}
+                  >
+                    <div
+                      id="panel-basic"
+                      role="tabpanel"
+                      aria-labelledby="tab-basic"
+                      className="transition-all"
+                    >
+                      <div className="mx-auto w-full max-w-3xl grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <InputRHF
+                          form={form}
+                          type="number"
+                          formKey="age"
+                          label="Age"
+                        />
+                        <InputRHF
+                          form={form}
+                          type="number"
+                          formKey="retirementAge"
+                          label="Retirement Age"
+                        />
+                        <InputRHF
+                          form={form}
+                          type="money"
+                          formKey="retirementSpend"
+                          label="Retirement spend"
+                        />
+                        <InputRHF
+                          form={form}
+                          type="money"
+                          formKey="currentInvested"
+                          label="Current Invested"
+                        />
+                        <InputRHF
+                          form={form}
+                          type="money"
+                          formKey="monthlyContribution"
+                          label="Monthly Contribution"
+                        />
+                        <InputRHF
+                          form={form}
+                          type="percentage"
+                          formKey="safeWithdrawRate"
+                          label="Safe Withdraw Rate"
+                        />
+                      </div>
+                    </div>
+                  </motion.div>
+                ) : (
+                  <motion.div
+                    key="advanced"
+                    initial={{ opacity: 0, y: 8 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -8 }}
+                    transition={{ duration: 0.2 }}
+                  >
+                    <div
+                      id="panel-advanced"
+                      role="tabpanel"
+                      aria-labelledby="tab-advanced"
+                      className="transition-all"
+                    >
+                      <div className="mx-auto w-full max-w-3xl grid grid-cols-1 gap-4">
+                        <InputRHF
+                          form={form}
+                          type="percentage"
+                          formKey="equityPremium"
+                          label="Equity Premium"
+                        />
+                      </div>
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </form>
           </Form>
         </CardContent>
