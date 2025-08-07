@@ -4,15 +4,7 @@ import z from "zod";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import {
-  LineChart,
-  Line,
-  XAxis,
-  YAxis,
-  Legend,
-  ResponsiveContainer,
-  ReferenceLine,
-} from "recharts";
+import { LineChart, Line, XAxis, YAxis, Legend, ReferenceLine } from "recharts";
 import {
   Card,
   CardContent,
@@ -77,62 +69,75 @@ function RouteComponent() {
 
   return (
     <>
-      <h1 className="text-2xl">Coast fire calculator</h1>
-      <h2 className="text-gray-400 text-pretty">
-        Calculate when you can coast fire
-      </h2>
-      <Form {...form}>
-        <form onSubmit={form.handleSubmit(onSubmit)}>
-          <Tabs defaultValue="basic" className="w-[400px]">
-            <TabsList>
-              <TabsTrigger value="basic">Basic</TabsTrigger>
-              <TabsTrigger value="advanced">Advanced</TabsTrigger>
-            </TabsList>
-            <TabsContent value="basic">
-              <InputRHF form={form} type="number" formKey="age" label="Age" />
-              <InputRHF
-                form={form}
-                type="number"
-                formKey="retirementAge"
-                label="Retirement Age"
-              />
-              <InputRHF
-                form={form}
-                type="money"
-                formKey="retirementSpend"
-                label="Retirement spend"
-              />
-              <InputRHF
-                form={form}
-                type="money"
-                formKey="currentInvested"
-                label="Current Invested"
-              />
-              <InputRHF
-                form={form}
-                type="money"
-                formKey="monthlyContribution"
-                label="Monthly Contribution"
-              />
-              <InputRHF
-                form={form}
-                type="percentage"
-                formKey="safeWithdrawRate"
-                label="Safe Withdraw Rate"
-              />
-            </TabsContent>
-            <TabsContent value="advanced">
-              <InputRHF
-                form={form}
-                type="percentage"
-                formKey="equityPremium"
-                label="Equity Premium"
-              />
-            </TabsContent>
-          </Tabs>
-          <Button type="submit">Submit</Button>
-        </form>
-      </Form>
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-2xl">Coast FIRE Calculator</CardTitle>
+          <CardDescription>Calculate when you can Coast FIRE.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+              <Tabs defaultValue="basic" className="w-full max-w-md">
+                <TabsList>
+                  <TabsTrigger value="basic">Basic</TabsTrigger>
+                  <TabsTrigger value="advanced">Advanced</TabsTrigger>
+                </TabsList>
+                <TabsContent value="basic" className="space-y-3">
+                  <InputRHF
+                    form={form}
+                    type="number"
+                    formKey="age"
+                    label="Age"
+                  />
+                  <InputRHF
+                    form={form}
+                    type="number"
+                    formKey="retirementAge"
+                    label="Retirement Age"
+                  />
+                  <InputRHF
+                    form={form}
+                    type="money"
+                    formKey="retirementSpend"
+                    label="Retirement spend"
+                  />
+                  <InputRHF
+                    form={form}
+                    type="money"
+                    formKey="currentInvested"
+                    label="Current Invested"
+                  />
+                  <InputRHF
+                    form={form}
+                    type="money"
+                    formKey="monthlyContribution"
+                    label="Monthly Contribution"
+                  />
+                  <InputRHF
+                    form={form}
+                    type="percentage"
+                    formKey="safeWithdrawRate"
+                    label="Safe Withdraw Rate"
+                  />
+                </TabsContent>
+                <TabsContent value="advanced" className="space-y-3">
+                  <InputRHF
+                    form={form}
+                    type="percentage"
+                    formKey="equityPremium"
+                    label="Equity Premium"
+                  />
+                </TabsContent>
+              </Tabs>
+            </form>
+          </Form>
+        </CardContent>
+        <CardContent className="flex justify-end pt-0">
+          <Button type="submit" onClick={form.handleSubmit(onSubmit)}>
+            Submit
+          </Button>
+        </CardContent>
+      </Card>
       {data && <CoastFireChart data={data} />}
     </>
   );
@@ -194,71 +199,67 @@ export default function CoastFireChart({ data }: { data: CoastFireForm }) {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="h-96">
-              <ChartContainer config={config}>
-                <ResponsiveContainer width="100%" height="100%">
-                  <LineChart data={chartData}>
-                    <XAxis
-                      dataKey="age"
-                      label={{
-                        value: "Age",
-                        position: "insideBottom",
-                        offset: -5,
-                      }}
+            <ChartContainer config={config} className="h-96 w-full">
+              <LineChart data={chartData}>
+                <XAxis
+                  dataKey="age"
+                  label={{
+                    value: "Age",
+                    position: "insideBottom",
+                    offset: -5,
+                  }}
+                />
+                <YAxis tickFormatter={formatMoney} />
+                <ChartTooltip
+                  cursor={false}
+                  content={
+                    <ChartTooltipContent
+                      hideLabel
+                      indicator="line"
+                      valueFormatter={(v) => formatMoney(Number(v))}
                     />
-                    <YAxis tickFormatter={formatMoney} />
-                    <ChartTooltip
-                      cursor={false}
-                      content={
-                        <ChartTooltipContent
-                          hideLabel
-                          indicator="line"
-                          valueFormatter={(v) => formatMoney(Number(v))}
-                        />
-                      }
-                    />
-                    <Legend />
+                  }
+                />
+                <Legend />
 
-                    {coastFireAge && (
-                      <ReferenceLine
-                        x={coastFireAge}
-                        stroke="#6366f1"
-                        label={{
-                          value: "FIRE",
-                          position: "insideTopLeft",
-                        }}
-                      />
-                    )}
-                    <Line
-                      type="monotone"
-                      dataKey="targetAmount"
-                      stroke="#ef4444"
-                      strokeWidth={1}
-                      name="Target Amount"
-                      dot={false}
-                    />
+                {coastFireAge && (
+                  <ReferenceLine
+                    x={coastFireAge}
+                    stroke="#6366f1"
+                    label={{
+                      value: "FIRE",
+                      position: "insideTopLeft",
+                    }}
+                  />
+                )}
+                <Line
+                  type="monotone"
+                  dataKey="targetAmount"
+                  stroke="#ef4444"
+                  strokeWidth={1}
+                  name="Target Amount"
+                  dot={false}
+                />
 
-                    <Line
-                      type="monotone"
-                      dataKey="currentTrajectory"
-                      stroke="#f59e0b"
-                      strokeWidth={2}
-                      name="Current Investments (Coast)"
-                      dot={false}
-                    />
+                <Line
+                  type="monotone"
+                  dataKey="currentTrajectory"
+                  stroke="#f59e0b"
+                  strokeWidth={2}
+                  name="Current Investments (Coast)"
+                  dot={false}
+                />
 
-                    <Line
-                      type="monotone"
-                      dataKey="withContributions"
-                      stroke="#10b981"
-                      strokeWidth={2}
-                      name="With Contributions"
-                      dot={false}
-                    />
-                  </LineChart>
-                </ResponsiveContainer>
-              </ChartContainer>
-            </div>
+                <Line
+                  type="monotone"
+                  dataKey="withContributions"
+                  stroke="#10b981"
+                  strokeWidth={2}
+                  name="With Contributions"
+                  dot={false}
+                />
+              </LineChart>
+            </ChartContainer>
           </CardContent>
         </Card>
       )}
