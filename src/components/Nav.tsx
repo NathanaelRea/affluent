@@ -22,7 +22,7 @@ const components: LinkMeta[] = [
       "Calculate the cost of living change with tax and itemized expenses.",
   },
   {
-    title: "Monete Carlo SWR",
+    title: "Monte Carlo SWR",
     href: "/monte-carlo-swr",
     description: "Simulate a portfolio with custom funds and withdraw rate.",
   },

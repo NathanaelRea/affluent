@@ -1,3 +1,10 @@
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { createFileRoute } from "@tanstack/react-router";
 import { CartesianGrid, Line, LineChart, XAxis, YAxis } from "recharts";
 import {
@@ -99,89 +106,110 @@ function Monte() {
 
   return (
     <>
-      <h1 className="text-2xl">Safe withdraw rate Monte Carlo</h1>
-      <h2 className="text-gray-400">
-        Use Monte Carlo simulations to see the performance of an investment
-        portfolio using a constant withdraw rate.
-      </h2>
-      <Form {...form}>
-        <form
-          onSubmit={form.handleSubmit(onSubmit)}
-          className="grid grid-cols-2 gap-4 py-8"
-        >
-          <InputRHF form={form} formKey="years" label="Years" />
-          <InputRHF
-            form={form}
-            formKey="initialInvestment"
-            label="Initial Investment"
-            type="money"
-          />
-          <InputRHF
-            form={form}
-            formKey="withdrawRate"
-            label="Withdraw Rate"
-            type="percentage"
-          />
-          <InputRHF
-            form={form}
-            formKey="inflation"
-            label="Inflation"
-            type="percentage"
-          />
-          <InputRHF
-            form={form}
-            formKey="simCount"
-            label="Number of Simulations"
-          />
-          <FormLabel className="font-bold text-lg col-span-2">
-            Portfolio
-          </FormLabel>
-          <div className="col-span-2">
-            <DataTable
-              columns={fundColumns}
-              data={portfolio}
-              setValue={(name, value) => {
-                // this is kinda dumb
-                form.setValue(
-                  name as
-                    | `portfolio.${number}.mean`
-                    | `portfolio.${number}.std`
-                    | `portfolio.${number}.weight`,
-                  Number(value),
-                );
-              }}
-              deleteRow={(index) => {
-                form.setValue(
-                  "portfolio",
-                  portfolio.filter((_, i) => i !== index),
-                );
-              }}
-            />
-            <FundDialog
-              handleSubmit={(data: Fund) => {
-                form.setValue("portfolio", [...portfolio, data]);
-              }}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-2xl">Monte Carlo SWR</CardTitle>
+          <CardDescription>
+            Simulate a constant-withdrawal portfolio to visualize outcomes and
+            risk.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Form {...form}>
+            <form
+              onSubmit={form.handleSubmit(onSubmit)}
+              className="grid grid-cols-1 md:grid-cols-2 gap-4"
             >
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                className="w-full"
-              >
-                <PlusIcon className="h-2" />
-              </Button>
-            </FundDialog>
-            <ErrorMessage message={form.formState.errors.portfolio?.message} />
-          </div>
-          <ErrorMessage message={form.formState.errors?.portfolio?.message} />
-          <div className="flex justify-end col-span-2">
-            <Button type="submit" disabled={isPending}>
-              Simulate
-            </Button>
-          </div>
-        </form>
-      </Form>
-      {parsedData && <Chart parsedData={parsedData} />}
+              <InputRHF form={form} formKey="years" label="Years" />
+              <InputRHF
+                form={form}
+                formKey="initialInvestment"
+                label="Initial Investment"
+                type="money"
+              />
+              <InputRHF
+                form={form}
+                formKey="withdrawRate"
+                label="Withdraw Rate"
+                type="percentage"
+              />
+              <InputRHF
+                form={form}
+                formKey="inflation"
+                label="Inflation"
+                type="percentage"
+              />
+              <InputRHF
+                form={form}
+                formKey="simCount"
+                label="Number of Simulations"
+              />
+              <FormLabel className="font-bold text-lg col-span-1 md:col-span-2">
+                Portfolio
+              </FormLabel>
+              <div className="col-span-1 md:col-span-2">
+                <DataTable
+                  columns={fundColumns}
+                  data={portfolio}
+                  setValue={(name, value) => {
+                    form.setValue(
+                      name as
+                        | `portfolio.${number}.mean`
+                        | `portfolio.${number}.std`
+                        | `portfolio.${number}.weight`,
+                      Number(value),
+                    );
+                  }}
+                  deleteRow={(index) => {
+                    form.setValue(
+                      "portfolio",
+                      portfolio.filter((_, i) => i !== index),
+                    );
+                  }}
+                />
+                <FundDialog
+                  handleSubmit={(data: Fund) => {
+                    form.setValue("portfolio", [...portfolio, data]);
+                  }}
+                >
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="w-full"
+                  >
+                    <PlusIcon className="h-2" />
+                  </Button>
+                </FundDialog>
+                <ErrorMessage
+                  message={form.formState.errors.portfolio?.message}
+                />
+              </div>
+              <ErrorMessage
+                message={form.formState.errors?.portfolio?.message}
+              />
+              <div className="flex justify-end col-span-1 md:col-span-2">
+                <Button type="submit" disabled={isPending}>
+                  Simulate
+                </Button>
+              </div>
+            </form>
+          </Form>
+        </CardContent>
+      </Card>
+      {parsedData && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-xl">Simulation results</CardTitle>
+            <CardDescription>
+              Aggregate outcomes and distribution
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Chart parsedData={parsedData} />
+          </CardContent>
+        </Card>
+      )}
     </>
   );
 }
@@ -224,15 +252,33 @@ function Chart({ parsedData }: { parsedData: ParsedData }) {
 
   return (
     <>
-      <div>
-        <div>
-          Number of bankrupt simulations: {simBankruptMap.size} (
-          {percentFormatter.format(simBankruptMap.size / simCount)})
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-3 mb-3">
+        <div className="rounded-lg border p-3 bg-card/50">
+          <div className="text-xs text-muted-foreground">Bankrupt Sims</div>
+          <div className="text-lg font-semibold">
+            {simBankruptMap.size}
+            <span className="text-sm text-muted-foreground ml-2">
+              ({percentFormatter.format(simBankruptMap.size / simCount)})
+            </span>
+          </div>
         </div>
-        <div>Average terminal value: {formatMoney(lastYearData.value)}</div>
-        <div>Median terminal value: {formatMoney(lastYearData.median)}</div>
-        <div>
-          10th percentile terminal value: {formatMoney(lastYearData.tenth)}
+        <div className="rounded-lg border p-3 bg-card/50">
+          <div className="text-xs text-muted-foreground">Average Terminal</div>
+          <div className="text-lg font-semibold">
+            {formatMoney(lastYearData.value)}
+          </div>
+        </div>
+        <div className="rounded-lg border p-3 bg-card/50">
+          <div className="text-xs text-muted-foreground">Median Terminal</div>
+          <div className="text-lg font-semibold">
+            {formatMoney(lastYearData.median)}
+          </div>
+        </div>
+        <div className="rounded-lg border p-3 bg-card/50">
+          <div className="text-xs text-muted-foreground">10th Percentile</div>
+          <div className="text-lg font-semibold">
+            {formatMoney(lastYearData.tenth)}
+          </div>
         </div>
       </div>
       <ChartContainer config={chartConfig} ref={chartRef}>
