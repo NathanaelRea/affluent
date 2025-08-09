@@ -17,6 +17,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { formatMoney } from "@/lib/utils";
 import { estimateAnnualSocialSecurity } from "@/lib/socialSecurity";
+import StatBox from "@/components/StatBox";
 import { AnimatePresence, motion } from "framer-motion";
 import {
   ChartConfig,
@@ -246,6 +247,7 @@ function CoastFireChart({ data }: { data: CoastFireForm }) {
     isCoastFire,
     coastFireAge,
     fireAge,
+    summary,
   } = calculateCoastFire(data);
 
   const config = {
@@ -294,6 +296,24 @@ function CoastFireChart({ data }: { data: CoastFireForm }) {
             </CardDescription>
           </CardHeader>
           <CardContent>
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
+              <StatBox
+                label="Retirement Spend"
+                value={formatMoney(data.retirementSpend)}
+              />
+              <StatBox
+                label="SSA (est.)"
+                value={formatMoney(summary.ssAnnual)}
+              />
+              <StatBox
+                label="Effective Spend"
+                value={formatMoney(summary.effectiveRetirementSpend)}
+              />
+              <StatBox
+                label="SWR Target"
+                value={formatMoney(summary.targetRetirementAmount)}
+              />
+            </div>
             <ChartContainer config={config} className="h-96 w-full">
               <LineChart data={chartData}>
                 <XAxis
@@ -509,5 +529,17 @@ const calculateCoastFire = (data: CoastFireForm) => {
     }
   }
 
-  return { points, isCoastFire, coastFireAge, fireAge };
+  return {
+    points,
+    isCoastFire,
+    coastFireAge,
+    fireAge,
+    summary: {
+      ssAnnual: Math.round(ssAnnual),
+      effectiveRetirementSpend: Math.round(effectiveRetirementSpend),
+      targetRetirementAmount: Math.round(targetRetirementAmount),
+      yearsToRetirement,
+      futureValueCurrent: Math.round(futureValueCurrent),
+    },
+  };
 };
