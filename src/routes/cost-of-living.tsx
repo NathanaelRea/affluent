@@ -40,6 +40,7 @@ import { FED_LIMITS, CITY_TAX, STATE_TAX, COST_OF_LIVING } from "@/data2024";
 import { InputRHF, InputWithFormat } from "@/components/InputRHF";
 import { ComboboxRHF } from "@/components/ComboboxRHF";
 import { TooltipHelp } from "@/components/TooltipHelp";
+import StatBox from "@/components/StatBox";
 
 export const Route = createFileRoute("/cost-of-living")({
   component: CostOfLivingWrapped,
@@ -181,16 +182,19 @@ function CostOfLiving({
                 type="money"
               />
               {data && (
-                <div className="md:col-span-2 flex flex-col items-end gap-1 mt-2">
-                  <p className="text-sm text-muted-foreground">
-                    Total expenses: {formatMoney(totalMoExpenses)}/mo
-                  </p>
-                  <p className="text-sm text-muted-foreground">
-                    Net take home: {formatMoney(netTakeHome / 12)}/mo
-                  </p>
-                  <p className="text-sm text-muted-foreground">
-                    Savings Rate: {formatPercent(savingsRate)}
-                  </p>
+                <div className="md:col-span-2 w-full grid grid-cols-3 items-end gap-4">
+                  <StatBox
+                    label="Total Expenses"
+                    value={formatMoney(totalMoExpenses)}
+                  />
+                  <StatBox
+                    label="Net Take Home"
+                    value={formatMoney(netTakeHome / 12)}
+                  />
+                  <StatBox
+                    label="Savings Rate"
+                    value={formatPercent(savingsRate)}
+                  />
                 </div>
               )}
               <div className="md:col-span-2 flex justify-between">
@@ -313,7 +317,7 @@ function Results({ data }: { data: CostOfLiving }) {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="w-full md:w-1/2 flex flex-col gap-4">
+          <div className="w-full grid grid-cols-2 gap-4">
             <div>
               <label className="mb-1 block text-sm font-medium">City</label>
               <Combobox
