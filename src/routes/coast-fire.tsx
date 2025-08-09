@@ -173,6 +173,7 @@ function RouteComponent() {
                           type="money"
                           formKey="annualIncome"
                           label="Annual Income"
+                          tooltip="To calculate SSA benefits"
                         />
                         <InputRHF
                           form={form}
