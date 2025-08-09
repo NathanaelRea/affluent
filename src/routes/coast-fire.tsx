@@ -59,11 +59,11 @@ function RouteComponent() {
     defaultValues: {
       age: 30,
       retirementAge: 67,
-      retirementSpend: 30_000,
-      annualIncome: 60_000,
-      currentInvested: 100_000,
-      monthlyContribution: 500,
-      equityPremium: 0.068,
+      retirementSpend: 80_000,
+      annualIncome: 80_000,
+      currentInvested: 50_000,
+      monthlyContribution: 1_000,
+      equityPremium: 0.06,
       safeWithdrawRate: 0.04,
     },
   });
