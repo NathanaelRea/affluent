@@ -15,7 +15,7 @@ const router = createRouter({
   routeTree,
   // Use hash-based routing for GitHub Pages compatibility
   history: createHashHistory(),
-  basepath: import.meta.env.PROD ? "/affluent" : "/",
+  basepath: "/",
 });
 
 // Register the router instance for type safety
