@@ -230,6 +230,7 @@ interface ChartDataPoint {
   currentTrajectory: number;
   targetAmount: number;
   withContributions: number;
+  coastPath?: number;
 }
 
 function CoastFireChart({ data }: { data: CoastFireForm }) {
@@ -237,6 +238,7 @@ function CoastFireChart({ data }: { data: CoastFireForm }) {
     points: chartData,
     isCoastFire,
     coastFireAge,
+    fireAge,
   } = calculateCoastFire(data);
 
   const config = {
@@ -245,15 +247,19 @@ function CoastFireChart({ data }: { data: CoastFireForm }) {
     },
     currentTrajectory: {
       label: "Current Trajectory",
-      color: "#00FFFF",
+      color: "#f59e0b",
     },
     targetAmount: {
       label: "Target Amount",
-      color: "#00FFFF",
+      color: "#ef4444",
     },
     withContributions: {
       label: "With Contributions",
-      color: "#00FFFF",
+      color: "#10b981",
+    },
+    coastPath: {
+      label: "Invest → Coast",
+      color: "#6366f1",
     },
   } satisfies ChartConfig;
 
@@ -304,12 +310,22 @@ function CoastFireChart({ data }: { data: CoastFireForm }) {
                 />
                 <Legend />
 
-                {coastFireAge && (
+                {fireAge && (
+                  <ReferenceLine
+                    x={fireAge}
+                    stroke="#10b981"
+                    label={{
+                      value: "FIRE",
+                      position: "insideTopLeft",
+                    }}
+                  />
+                )}
+                {!isCoastFire && coastFireAge && (
                   <ReferenceLine
                     x={coastFireAge}
                     stroke="#6366f1"
                     label={{
-                      value: "FIRE",
+                      value: "Coast FIRE",
                       position: "insideTopLeft",
                     }}
                   />
@@ -340,6 +356,16 @@ function CoastFireChart({ data }: { data: CoastFireForm }) {
                   name="With Contributions"
                   dot={false}
                 />
+                {coastFireAge !== null && !isCoastFire && (
+                  <Line
+                    type="monotone"
+                    dataKey="coastPath"
+                    stroke="#6366f1"
+                    strokeWidth={2}
+                    name="Invest → Coast"
+                    dot={false}
+                  />
+                )}
               </LineChart>
             </ChartContainer>
           </CardContent>
@@ -351,6 +377,7 @@ function CoastFireChart({ data }: { data: CoastFireForm }) {
 
 const calculateCoastFire = (data: CoastFireForm) => {
   const yearsToRetirement = data.retirementAge - data.age;
+  const monthsToRetirement = yearsToRetirement * 12;
   const targetRetirementAmount = data.retirementSpend / data.safeWithdrawRate;
   const annualReturn = data.equityPremium;
   const monthlyReturn = annualReturn / 12;
@@ -362,23 +389,25 @@ const calculateCoastFire = (data: CoastFireForm) => {
   // Check if already coast fire
   const isCoastFire = futureValueCurrent >= targetRetirementAmount;
 
-  // Generate chart data points
+  // Generate chart data points (for display across ages)
   const points: ChartDataPoint[] = [];
-  let coastFireAge: number | null = null;
+  let fireAge: number | null = null;
 
   for (let year = 0; year <= yearsToRetirement; year++) {
     const currentAge = data.age + year;
 
-    // Current investments grown without additional contributions
+    // Current investments grown without additional contributions (annual compounding)
     const currentTrajectoryValue =
       data.currentInvested * Math.pow(1 + annualReturn, year);
 
-    // With monthly contributions
+    // With monthly contributions while continuing to invest
     const monthsInvested = year * 12;
     const futureValueContributions =
       monthsInvested > 0
-        ? data.monthlyContribution *
-          ((Math.pow(1 + monthlyReturn, monthsInvested) - 1) / monthlyReturn)
+        ? monthlyReturn === 0
+          ? data.monthlyContribution * monthsInvested
+          : data.monthlyContribution *
+            ((Math.pow(1 + monthlyReturn, monthsInvested) - 1) / monthlyReturn)
         : 0;
     const withContributionsValue =
       currentTrajectoryValue + futureValueContributions;
@@ -390,13 +419,82 @@ const calculateCoastFire = (data: CoastFireForm) => {
       withContributions: Math.round(withContributionsValue),
     });
 
-    // Find fire age (when withContributions crosses target)
-    if (!coastFireAge && withContributionsValue >= targetRetirementAmount) {
-      coastFireAge = currentAge;
+    // Find FIRE age (with continual investments) when withContributions crosses target
+    if (fireAge === null && withContributionsValue >= targetRetirementAmount) {
+      fireAge = currentAge;
     }
-    // TODO ^ this is fireAge
-    // coastage should be backtracked from earliest
   }
 
-  return { points, isCoastFire, coastFireAge };
+  // Back-calculate Coast FIRE age: earliest stop-invest age such that the portfolio
+  // reaches target at retirement with no further contributions after that age.
+  const baseAtRetirement =
+    data.currentInvested * Math.pow(1 + annualReturn, yearsToRetirement);
+
+  const contributionFVAtRetirement = (monthsContributed: number) => {
+    if (monthsContributed <= 0) return 0;
+    if (monthlyReturn === 0) {
+      return data.monthlyContribution * monthsContributed;
+    }
+    const grownSoFar =
+      ((Math.pow(1 + monthlyReturn, monthsContributed) - 1) / monthlyReturn) *
+      data.monthlyContribution;
+    const monthsRemaining = monthsToRetirement - monthsContributed;
+    return grownSoFar * Math.pow(1 + monthlyReturn, monthsRemaining);
+  };
+
+  let coastFireAge: number | null = null;
+  for (
+    let yearsContributing = 0;
+    yearsContributing <= yearsToRetirement;
+    yearsContributing++
+  ) {
+    const monthsContributed = yearsContributing * 12;
+    const totalAtRetirement =
+      baseAtRetirement + contributionFVAtRetirement(monthsContributed);
+    if (totalAtRetirement >= targetRetirementAmount) {
+      coastFireAge = data.age + yearsContributing;
+      break;
+    }
+  }
+
+  // Build Invest → Coast path across ages if we have a coast age
+  if (coastFireAge !== null) {
+    const yearsInvesting = coastFireAge - data.age;
+    // Precompute value at the coast age (end of investing period)
+    const monthsAtStop = yearsInvesting * 12;
+    const valueAtStop =
+      data.currentInvested * Math.pow(1 + annualReturn, yearsInvesting) +
+      (monthsAtStop > 0
+        ? monthlyReturn === 0
+          ? data.monthlyContribution * monthsAtStop
+          : data.monthlyContribution *
+            ((Math.pow(1 + monthlyReturn, monthsAtStop) - 1) / monthlyReturn)
+        : 0);
+
+    for (let year = 0; year <= yearsToRetirement; year++) {
+      const currentAge = data.age + year;
+      let coastPathValue: number;
+      if (year <= yearsInvesting) {
+        const monthsInvested = year * 12;
+        const contrib =
+          monthsInvested > 0
+            ? monthlyReturn === 0
+              ? data.monthlyContribution * monthsInvested
+              : data.monthlyContribution *
+                ((Math.pow(1 + monthlyReturn, monthsInvested) - 1) /
+                  monthlyReturn)
+            : 0;
+        coastPathValue =
+          data.currentInvested * Math.pow(1 + annualReturn, year) + contrib;
+      } else {
+        const yearsSinceStop = year - yearsInvesting;
+        coastPathValue =
+          valueAtStop * Math.pow(1 + annualReturn, yearsSinceStop);
+      }
+      const point = points.find((p) => p.age === currentAge);
+      if (point) point.coastPath = Math.round(coastPathValue);
+    }
+  }
+
+  return { points, isCoastFire, coastFireAge, fireAge };
 };
