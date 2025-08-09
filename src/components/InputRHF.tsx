@@ -1,4 +1,5 @@
 import React, { ReactNode, useState } from "react";
+import { HelpCircle } from "lucide-react";
 import { FieldValues, Path, UseFormReturn } from "react-hook-form";
 import {
   FormField,
@@ -8,6 +9,7 @@ import {
   FormMessage,
 } from "./ui/form";
 import { Input } from "./ui/input";
+import { Tooltip, TooltipContent, TooltipTrigger } from "./ui/tooltip";
 import { moneyFormatter, percentFormatter } from "@/lib/utils";
 
 type FormatType = "money" | "percentage";
@@ -18,6 +20,7 @@ type InputRHFProps<T extends FieldValues> = {
   label?: ReactNode;
   placeholder?: string;
   type?: FormatType | "number";
+  tooltip?: ReactNode;
 };
 export function InputRHF<T extends FieldValues>({
   form,
@@ -25,6 +28,7 @@ export function InputRHF<T extends FieldValues>({
   label,
   placeholder,
   type,
+  tooltip,
 }: InputRHFProps<T>) {
   return (
     <FormField
@@ -32,7 +36,21 @@ export function InputRHF<T extends FieldValues>({
       name={formKey}
       render={({ field }) => (
         <FormItem>
-          {label && <FormLabel>{label}</FormLabel>}
+          {label && (
+            <FormLabel>
+              <span className="inline-flex items-center gap-1">
+                {label}
+                {tooltip && (
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <HelpCircle className="h-3.5 w-3.5" aria-hidden="true" />
+                    </TooltipTrigger>
+                    <TooltipContent>{tooltip}</TooltipContent>
+                  </Tooltip>
+                )}
+              </span>
+            </FormLabel>
+          )}
           <FormControl>
             {type == "number" ? (
               <Input
@@ -95,7 +113,7 @@ function parseRaw(input: string) {
 
 type InputWithFormatProps = {
   value: number;
-  onChange: (value: number) => void;
+  onChange: (_value: number) => void;
   onBlur: () => void;
   type: FormatType;
   placeholder?: string;
