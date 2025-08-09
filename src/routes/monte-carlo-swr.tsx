@@ -70,11 +70,11 @@ const defaultValues: MyForm = {
   years: 30,
   simCount: 100,
   initialInvestment: 1_000_000,
-  inflation: 0.02,
-  withdrawRate: 0.04,
+  inflation: 0.025,
+  withdrawRate: 0.035,
   portfolio: [
-    { name: "Stocks", mean: 0.08, std: 0.15, weight: 0.5 },
-    { name: "Bonds", mean: 0.03, std: 0.05, weight: 0.5 },
+    { name: "Stocks", mean: 0.07, std: 0.13, weight: 0.8 },
+    { name: "Bonds", mean: 0.035, std: 0.054, weight: 0.2 },
   ],
 };
 
