@@ -211,13 +211,11 @@ function RouteComponent() {
                   </motion.div>
                 )}
               </AnimatePresence>
+              <div className="flex justify-end">
+                <Button type="submit">Submit</Button>
+              </div>
             </form>
           </Form>
-        </CardContent>
-        <CardContent className="flex justify-end pt-0">
-          <Button type="submit" onClick={form.handleSubmit(onSubmit)}>
-            Submit
-          </Button>
         </CardContent>
       </Card>
       {data && <CoastFireChart key={JSON.stringify(data)} data={data} />}
