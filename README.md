@@ -4,7 +4,7 @@ Affluent is a web app that helps you crunch the numbers on your finances. It’s
 
 **No data is transmitted** - everything runs locally in your browser. It’s just a calculator, will never have ads, no strings attached.
 
-[Try it out!](https://nathanaelrea.github.io/Affluent/)
+[Try it out!](https://nathanaelrea.github.io/affluent/)
 
 ## Features
 
