@@ -1,3 +1,4 @@
+import { SSA_2024 } from "@/data2024";
 export type SocialSecurityInput = {
   currentAge: number;
   retirementAge: number; // used for projecting years worked; does not have to equal claimAge
@@ -18,10 +19,10 @@ export type SocialSecurityInput = {
 export const estimateAnnualSocialSecurity = (
   input: SocialSecurityInput,
 ): number => {
-  const FRA = 67; // assumption
-  const TAXABLE_WAGE_BASE_2024 = 168_600; // 2024 SSA wage base
-  const BEND_POINT_1_2024 = 1_174; // monthly
-  const BEND_POINT_2_2024 = 7_078; // monthly
+  const FRA = SSA_2024.fullRetirementAge;
+  const TAXABLE_WAGE_BASE_2024 = SSA_2024.taxableWageBase; // 2024 SSA wage base
+  const BEND_POINT_1_2024 = SSA_2024.bendPoint1Monthly; // monthly
+  const BEND_POINT_2_2024 = SSA_2024.bendPoint2Monthly; // monthly
 
   const claimAge = input.claimAge ?? input.retirementAge;
   const workStartAge = input.workStartAge ?? 22;
