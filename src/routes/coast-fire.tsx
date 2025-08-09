@@ -16,6 +16,7 @@ import { Form } from "@/components/ui/form";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { formatMoney } from "@/lib/utils";
+import { estimateAnnualSocialSecurity } from "@/lib/socialSecurity";
 import { AnimatePresence, motion } from "framer-motion";
 import {
   ChartConfig,
@@ -36,6 +37,7 @@ const coastFireFormSchema = z
     age: ageSchema,
     retirementAge: ageSchema,
     retirementSpend: z.number(),
+    annualIncome: z.number(),
     currentInvested: z.number(),
     monthlyContribution: z.number(),
     equityPremium: percentSchema,
@@ -57,6 +59,7 @@ function RouteComponent() {
       age: 30,
       retirementAge: 67,
       retirementSpend: 30_000,
+      annualIncome: 60_000,
       currentInvested: 100_000,
       monthlyContribution: 500,
       equityPremium: 0.068,
@@ -163,6 +166,12 @@ function RouteComponent() {
                           type="money"
                           formKey="retirementSpend"
                           label="Retirement spend"
+                        />
+                        <InputRHF
+                          form={form}
+                          type="money"
+                          formKey="annualIncome"
+                          label="Annual Income"
                         />
                         <InputRHF
                           form={form}
@@ -374,7 +383,15 @@ function CoastFireChart({ data }: { data: CoastFireForm }) {
 const calculateCoastFire = (data: CoastFireForm) => {
   const yearsToRetirement = data.retirementAge - data.age;
   const monthsToRetirement = yearsToRetirement * 12;
-  const targetRetirementAmount = data.retirementSpend / data.safeWithdrawRate;
+  const ssAnnual = estimateAnnualSocialSecurity({
+    currentAge: data.age,
+    retirementAge: data.retirementAge,
+    claimAge: data.retirementAge,
+    annualIncome: data.annualIncome,
+  });
+  const effectiveRetirementSpend = Math.max(0, data.retirementSpend - ssAnnual);
+  const targetRetirementAmount =
+    effectiveRetirementSpend / data.safeWithdrawRate;
   const annualReturn = data.equityPremium;
   const monthlyReturn = annualReturn / 12;
 
