@@ -7,7 +7,7 @@ import tailwindcss from "@tailwindcss/vite";
 // https://vite.dev/config/
 export default defineConfig(({ mode }) => {
   return {
-    base: mode === "production" ? "/Affluent/" : "/",
+    base: mode === "production" ? "/affluent/" : "/",
     plugins: [
       tailwindcss(),
       tanstackRouter({
