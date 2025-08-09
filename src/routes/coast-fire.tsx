@@ -16,6 +16,8 @@ import { Form } from "@/components/ui/form";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { formatMoney } from "@/lib/utils";
+import { estimateAnnualSocialSecurity } from "@/lib/socialSecurity";
+import StatBox from "@/components/StatBox";
 import { AnimatePresence, motion } from "framer-motion";
 import {
   ChartConfig,
@@ -36,6 +38,7 @@ const coastFireFormSchema = z
     age: ageSchema,
     retirementAge: ageSchema,
     retirementSpend: z.number(),
+    annualIncome: z.number(),
     currentInvested: z.number(),
     monthlyContribution: z.number(),
     equityPremium: percentSchema,
@@ -56,10 +59,11 @@ function RouteComponent() {
     defaultValues: {
       age: 30,
       retirementAge: 67,
-      retirementSpend: 30_000,
-      currentInvested: 100_000,
-      monthlyContribution: 500,
-      equityPremium: 0.068,
+      retirementSpend: 80_000,
+      annualIncome: 80_000,
+      currentInvested: 50_000,
+      monthlyContribution: 1_000,
+      equityPremium: 0.06,
       safeWithdrawRate: 0.04,
     },
   });
@@ -145,7 +149,7 @@ function RouteComponent() {
                       aria-labelledby="tab-basic"
                       className="transition-all"
                     >
-                      <div className="mx-auto w-full max-w-3xl grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="mx-auto w-full grid grid-cols-1 md:grid-cols-2 gap-4">
                         <InputRHF
                           form={form}
                           type="number"
@@ -163,6 +167,13 @@ function RouteComponent() {
                           type="money"
                           formKey="retirementSpend"
                           label="Retirement spend"
+                        />
+                        <InputRHF
+                          form={form}
+                          type="money"
+                          formKey="annualIncome"
+                          label="Annual Income"
+                          tooltip="To calculate SSA benefits"
                         />
                         <InputRHF
                           form={form}
@@ -199,7 +210,7 @@ function RouteComponent() {
                       aria-labelledby="tab-advanced"
                       className="transition-all"
                     >
-                      <div className="mx-auto w-full max-w-3xl grid grid-cols-1 gap-4">
+                      <div className="mx-auto w-full grid grid-cols-2 gap-4">
                         <InputRHF
                           form={form}
                           type="percentage"
@@ -237,6 +248,7 @@ function CoastFireChart({ data }: { data: CoastFireForm }) {
     isCoastFire,
     coastFireAge,
     fireAge,
+    summary,
   } = calculateCoastFire(data);
 
   const config = {
@@ -285,6 +297,24 @@ function CoastFireChart({ data }: { data: CoastFireForm }) {
             </CardDescription>
           </CardHeader>
           <CardContent>
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
+              <StatBox
+                label="Retirement Spend"
+                value={formatMoney(data.retirementSpend)}
+              />
+              <StatBox
+                label="SSA (est.)"
+                value={formatMoney(summary.ssAnnual)}
+              />
+              <StatBox
+                label="Effective Spend"
+                value={formatMoney(summary.effectiveRetirementSpend)}
+              />
+              <StatBox
+                label="SWR Target"
+                value={formatMoney(summary.targetRetirementAmount)}
+              />
+            </div>
             <ChartContainer config={config} className="h-96 w-full">
               <LineChart data={chartData}>
                 <XAxis
@@ -374,7 +404,15 @@ function CoastFireChart({ data }: { data: CoastFireForm }) {
 const calculateCoastFire = (data: CoastFireForm) => {
   const yearsToRetirement = data.retirementAge - data.age;
   const monthsToRetirement = yearsToRetirement * 12;
-  const targetRetirementAmount = data.retirementSpend / data.safeWithdrawRate;
+  const ssAnnual = estimateAnnualSocialSecurity({
+    currentAge: data.age,
+    retirementAge: data.retirementAge,
+    claimAge: data.retirementAge,
+    annualIncome: data.annualIncome,
+  });
+  const effectiveRetirementSpend = Math.max(0, data.retirementSpend - ssAnnual);
+  const targetRetirementAmount =
+    effectiveRetirementSpend / data.safeWithdrawRate;
   const annualReturn = data.equityPremium;
   const monthlyReturn = annualReturn / 12;
 
@@ -492,5 +530,17 @@ const calculateCoastFire = (data: CoastFireForm) => {
     }
   }
 
-  return { points, isCoastFire, coastFireAge, fireAge };
+  return {
+    points,
+    isCoastFire,
+    coastFireAge,
+    fireAge,
+    summary: {
+      ssAnnual: Math.round(ssAnnual),
+      effectiveRetirementSpend: Math.round(effectiveRetirementSpend),
+      targetRetirementAmount: Math.round(targetRetirementAmount),
+      yearsToRetirement,
+      futureValueCurrent: Math.round(futureValueCurrent),
+    },
+  };
 };

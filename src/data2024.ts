@@ -389,3 +389,11 @@ export const CITY_TAX: Record<City, Tax> = {
   Seattle: undefined,
   Miami: undefined,
 };
+
+// Social Security assumptions for 2024
+export const SSA_2024 = {
+  fullRetirementAge: 67,
+  taxableWageBase: 168_600,
+  bendPoint1Monthly: 1_174,
+  bendPoint2Monthly: 7_078,
+} as const;
