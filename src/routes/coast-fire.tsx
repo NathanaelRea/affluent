@@ -149,7 +149,7 @@ function RouteComponent() {
                       aria-labelledby="tab-basic"
                       className="transition-all"
                     >
-                      <div className="mx-auto w-full max-w-3xl grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="mx-auto w-full grid grid-cols-1 md:grid-cols-2 gap-4">
                         <InputRHF
                           form={form}
                           type="number"
@@ -209,7 +209,7 @@ function RouteComponent() {
                       aria-labelledby="tab-advanced"
                       className="transition-all"
                     >
-                      <div className="mx-auto w-full max-w-3xl grid grid-cols-1 gap-4">
+                      <div className="mx-auto w-full grid grid-cols-2 gap-4">
                         <InputRHF
                           form={form}
                           type="percentage"
