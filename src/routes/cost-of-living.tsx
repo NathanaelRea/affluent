@@ -4,7 +4,6 @@ import {
   Card,
   CardContent,
   CardDescription,
-  CardFooter,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
@@ -194,18 +193,15 @@ function CostOfLiving({
                   </p>
                 </div>
               )}
-              <div className="md:col-span-2" />
+              <div className="md:col-span-2 flex justify-between">
+                <Button variant="outline" onClick={resetDefaults} type="button">
+                  Reset
+                </Button>
+                <Button type="submit">Calculate</Button>
+              </div>
             </form>
           </Form>
         </CardContent>
-        <CardFooter className="justify-between">
-          <Button variant="outline" onClick={resetDefaults} type="button">
-            Reset
-          </Button>
-          <Button type="submit" onClick={form.handleSubmit(onSubmit)}>
-            Calculate
-          </Button>
-        </CardFooter>
       </Card>
 
       {data && <Results data={data} />}
