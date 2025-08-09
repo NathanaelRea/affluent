@@ -335,25 +335,15 @@ function CoastFireChart({ data }: { data: CoastFireForm }) {
                   dataKey="targetAmount"
                   stroke="#ef4444"
                   strokeWidth={1}
-                  name="Target Amount"
+                  name="Target"
                   dot={false}
                 />
-
                 <Line
                   type="monotone"
                   dataKey="currentTrajectory"
                   stroke="#f59e0b"
                   strokeWidth={2}
-                  name="Current Investments (Coast)"
-                  dot={false}
-                />
-
-                <Line
-                  type="monotone"
-                  dataKey="withContributions"
-                  stroke="#10b981"
-                  strokeWidth={2}
-                  name="With Contributions"
+                  name="Coast"
                   dot={false}
                 />
                 {coastFireAge !== null && !isCoastFire && (
@@ -366,6 +356,14 @@ function CoastFireChart({ data }: { data: CoastFireForm }) {
                     dot={false}
                   />
                 )}
+                <Line
+                  type="monotone"
+                  dataKey="withContributions"
+                  stroke="#10b981"
+                  strokeWidth={2}
+                  name="Only Invest"
+                  dot={false}
+                />
               </LineChart>
             </ChartContainer>
           </CardContent>
