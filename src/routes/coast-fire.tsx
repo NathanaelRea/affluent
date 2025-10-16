@@ -303,7 +303,7 @@ function CoastFireChart({ data }: { data: CoastFireForm }) {
                 value={formatMoney(data.retirementSpend)}
               />
               <StatBox
-                label="SSA (est.)"
+                label={`SSA (est. @${data.retirementAge})`}
                 value={formatMoney(summary.ssAnnual)}
               />
               <StatBox
@@ -401,38 +401,35 @@ function CoastFireChart({ data }: { data: CoastFireForm }) {
   );
 }
 
-const calculateCoastFire = (data: CoastFireForm) => {
+function calculateCoastFire(data: CoastFireForm) {
   const yearsToRetirement = data.retirementAge - data.age;
-  const monthsToRetirement = yearsToRetirement * 12;
-  const ssAnnual = estimateAnnualSocialSecurity({
-    currentAge: data.age,
-    retirementAge: data.retirementAge,
-    claimAge: data.retirementAge,
-    annualIncome: data.annualIncome,
-  });
-  const effectiveRetirementSpend = Math.max(0, data.retirementSpend - ssAnnual);
-  const targetRetirementAmount =
-    effectiveRetirementSpend / data.safeWithdrawRate;
   const annualReturn = data.equityPremium;
   const monthlyReturn = annualReturn / 12;
 
-  // Calculate what current investments will be worth at retirement (coast fire trajectory)
+  const calcTarget = targetCalculator(data);
+  const selectedTarget = calcTarget(data.retirementAge);
+
   const futureValueCurrent =
     data.currentInvested * Math.pow(1 + annualReturn, yearsToRetirement);
-
-  // Check if already coast fire
-  const isCoastFire = futureValueCurrent >= targetRetirementAmount;
+  const isCoastFire =
+    futureValueCurrent >= selectedTarget.targetRetirementAmount;
 
   // Generate chart data points (for display across ages)
   const points: ChartDataPoint[] = [];
   let fireAge: number | null = null;
-
+  let coastFire: { age: number; year: number; amount: number } | null = null;
   for (let year = 0; year <= yearsToRetirement; year++) {
     const currentAge = data.age + year;
+
+    // You get different SSA benefits depending on claim age
+    // So target is not a horizontal line. Higher before FRA, lower after
+    const { targetRetirementAmount } = calcTarget(currentAge);
+    const targetAmount = Math.round(targetRetirementAmount);
 
     // Current investments grown without additional contributions (annual compounding)
     const currentTrajectoryValue =
       data.currentInvested * Math.pow(1 + annualReturn, year);
+    const currentTrajectory = Math.round(currentTrajectoryValue);
 
     // With monthly contributions while continuing to invest
     const monthsInvested = year * 12;
@@ -445,102 +442,72 @@ const calculateCoastFire = (data: CoastFireForm) => {
         : 0;
     const withContributionsValue =
       currentTrajectoryValue + futureValueContributions;
+    const withContributions = Math.round(withContributionsValue);
+    const MAGIC_REDUCTION_CLOSE_YEAR = 0.975;
+    if (
+      !fireAge &&
+      withContributions >= targetAmount * MAGIC_REDUCTION_CLOSE_YEAR
+    ) {
+      fireAge = currentAge;
+    }
+
+    const ifWeRetireNow = Math.round(
+      withContributions *
+        Math.pow(1 + data.equityPremium, data.retirementAge - currentAge),
+    );
+    if (!coastFire && ifWeRetireNow >= selectedTarget.targetRetirementAmount) {
+      coastFire = {
+        year,
+        age: currentAge,
+        amount: withContributions,
+      };
+    }
+    const coastPathValue = coastFire
+      ? coastFire.amount *
+        Math.pow(1 + data.equityPremium, year - coastFire.year)
+      : null;
+    const coastPath = coastPathValue ? Math.round(coastPathValue) : undefined;
 
     points.push({
       age: currentAge,
-      currentTrajectory: Math.round(currentTrajectoryValue),
-      targetAmount: Math.round(targetRetirementAmount),
-      withContributions: Math.round(withContributionsValue),
+      currentTrajectory,
+      targetAmount,
+      withContributions,
+      coastPath,
     });
-
-    // Find FIRE age (with continual investments) when withContributions crosses target
-    if (fireAge === null && withContributionsValue >= targetRetirementAmount) {
-      fireAge = currentAge;
-    }
-  }
-
-  // Back-calculate Coast FIRE age: earliest stop-invest age such that the portfolio
-  // reaches target at retirement with no further contributions after that age.
-  const baseAtRetirement =
-    data.currentInvested * Math.pow(1 + annualReturn, yearsToRetirement);
-
-  const contributionFVAtRetirement = (monthsContributed: number) => {
-    if (monthsContributed <= 0) return 0;
-    if (monthlyReturn === 0) {
-      return data.monthlyContribution * monthsContributed;
-    }
-    const grownSoFar =
-      ((Math.pow(1 + monthlyReturn, monthsContributed) - 1) / monthlyReturn) *
-      data.monthlyContribution;
-    const monthsRemaining = monthsToRetirement - monthsContributed;
-    return grownSoFar * Math.pow(1 + monthlyReturn, monthsRemaining);
-  };
-
-  let coastFireAge: number | null = null;
-  for (
-    let yearsContributing = 0;
-    yearsContributing <= yearsToRetirement;
-    yearsContributing++
-  ) {
-    const monthsContributed = yearsContributing * 12;
-    const totalAtRetirement =
-      baseAtRetirement + contributionFVAtRetirement(monthsContributed);
-    if (totalAtRetirement >= targetRetirementAmount) {
-      coastFireAge = data.age + yearsContributing;
-      break;
-    }
-  }
-
-  // Build Invest → Coast path across ages if we have a coast age
-  if (coastFireAge !== null) {
-    const yearsInvesting = coastFireAge - data.age;
-    // Precompute value at the coast age (end of investing period)
-    const monthsAtStop = yearsInvesting * 12;
-    const valueAtStop =
-      data.currentInvested * Math.pow(1 + annualReturn, yearsInvesting) +
-      (monthsAtStop > 0
-        ? monthlyReturn === 0
-          ? data.monthlyContribution * monthsAtStop
-          : data.monthlyContribution *
-            ((Math.pow(1 + monthlyReturn, monthsAtStop) - 1) / monthlyReturn)
-        : 0);
-
-    for (let year = 0; year <= yearsToRetirement; year++) {
-      const currentAge = data.age + year;
-      let coastPathValue: number;
-      if (year <= yearsInvesting) {
-        const monthsInvested = year * 12;
-        const contrib =
-          monthsInvested > 0
-            ? monthlyReturn === 0
-              ? data.monthlyContribution * monthsInvested
-              : data.monthlyContribution *
-                ((Math.pow(1 + monthlyReturn, monthsInvested) - 1) /
-                  monthlyReturn)
-            : 0;
-        coastPathValue =
-          data.currentInvested * Math.pow(1 + annualReturn, year) + contrib;
-      } else {
-        const yearsSinceStop = year - yearsInvesting;
-        coastPathValue =
-          valueAtStop * Math.pow(1 + annualReturn, yearsSinceStop);
-      }
-      const point = points.find((p) => p.age === currentAge);
-      if (point) point.coastPath = Math.round(coastPathValue);
-    }
   }
 
   return {
     points,
     isCoastFire,
-    coastFireAge,
+    coastFireAge: coastFire?.age,
     fireAge,
     summary: {
-      ssAnnual: Math.round(ssAnnual),
-      effectiveRetirementSpend: Math.round(effectiveRetirementSpend),
-      targetRetirementAmount: Math.round(targetRetirementAmount),
+      ssAnnual: Math.round(selectedTarget.ssAnnual),
+      effectiveRetirementSpend: Math.round(
+        selectedTarget.effectiveRetirementSpend,
+      ),
+      targetRetirementAmount: Math.round(selectedTarget.targetRetirementAmount),
       yearsToRetirement,
       futureValueCurrent: Math.round(futureValueCurrent),
     },
   };
-};
+}
+
+function targetCalculator(data: CoastFireForm) {
+  return (claimAge?: number) => {
+    const ssAnnual = estimateAnnualSocialSecurity({
+      claimAge,
+      currentAge: data.age,
+      retirementAge: data.retirementAge,
+      annualIncome: data.annualIncome,
+    });
+    const effectiveRetirementSpend = Math.max(
+      0,
+      data.retirementSpend - ssAnnual,
+    );
+    const targetRetirementAmount =
+      effectiveRetirementSpend / data.safeWithdrawRate;
+    return { ssAnnual, effectiveRetirementSpend, targetRetirementAmount };
+  };
+}
