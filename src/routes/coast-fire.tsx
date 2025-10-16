@@ -443,7 +443,11 @@ function calculateCoastFire(data: CoastFireForm) {
     const withContributionsValue =
       currentTrajectoryValue + futureValueContributions;
     const withContributions = Math.round(withContributionsValue);
-    if (!fireAge && withContributions >= targetAmount) {
+    const MAGIC_REDUCTION_CLOSE_YEAR = 0.975;
+    if (
+      !fireAge &&
+      withContributions >= targetAmount * MAGIC_REDUCTION_CLOSE_YEAR
+    ) {
       fireAge = currentAge;
     }
 
