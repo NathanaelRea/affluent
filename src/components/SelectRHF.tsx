@@ -1,5 +1,5 @@
 import { ReactNode } from "react";
-import { FieldValues, Path, UseFormReturn } from "react-hook-form";
+import { FieldPath, FieldValues, UseFormReturn } from "react-hook-form";
 import {
   FormField,
   FormItem,
@@ -18,7 +18,7 @@ import {
 
 type SelectRHFProps<T extends FieldValues> = {
   form: UseFormReturn<T>;
-  formKey: Path<T>;
+  formKey: FieldPath<T>;
   items: Item[];
   label?: ReactNode;
 };

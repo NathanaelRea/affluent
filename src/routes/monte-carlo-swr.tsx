@@ -82,7 +82,7 @@ function Monte() {
   const [parsedData, setParsedData] = useState<ParsedData>();
   const [isPending, startTransition] = useTransition();
 
-  const form = useForm<MyForm>({
+  const form = useForm({
     resolver: zodResolver(formSchema),
     defaultValues,
   });

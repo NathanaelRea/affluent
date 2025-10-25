@@ -54,7 +54,7 @@ function RouteComponent() {
   const [data, setData] = useState<CoastFireForm | undefined>(undefined);
   const [tab, setTab] = useState<"basic" | "advanced">("basic");
 
-  const form = useForm<CoastFireForm>({
+  const form = useForm({
     resolver: zodResolver(coastFireFormSchema),
     defaultValues: {
       age: 30,

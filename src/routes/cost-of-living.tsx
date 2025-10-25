@@ -100,7 +100,7 @@ function CostOfLiving({
 }) {
   const [data, setData] = useState<CostOfLiving | undefined>();
 
-  const form = useForm<CostOfLiving>({
+  const form = useForm({
     resolver: zodResolver(costOfLivingSchema),
     defaultValues,
   });
