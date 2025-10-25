@@ -41,6 +41,7 @@ import { InputRHF, InputWithFormat } from "@/components/InputRHF";
 import { ComboboxRHF } from "@/components/ComboboxRHF";
 import { TooltipHelp } from "@/components/TooltipHelp";
 import StatBox from "@/components/StatBox";
+import { COLORS } from "@/colors";
 
 export const Route = createFileRoute("/cost-of-living")({
   component: CostOfLivingWrapped,
@@ -100,7 +101,7 @@ function CostOfLiving({
 }) {
   const [data, setData] = useState<CostOfLiving | undefined>();
 
-  const form = useForm<CostOfLiving>({
+  const form = useForm({
     resolver: zodResolver(costOfLivingSchema),
     defaultValues,
   });
@@ -451,11 +452,11 @@ function barChartConfig(localCity: City, remoteCity: City): ChartConfig {
   return {
     local: {
       label: localCity,
-      color: "#FFFFFF",
+      color: COLORS.secondaryForegrond,
     },
     remote: {
       label: remoteCity,
-      color: "#00FFFF",
+      color: COLORS.primary,
     },
   } satisfies ChartConfig;
 }
@@ -600,7 +601,7 @@ function MoneyBarChart({
             />
           }
         />
-        <ChartLegend content={<ChartLegendContent />} />
+        <ChartLegend content={<ChartLegendContent payload={undefined} />} />
         <Bar dataKey="local" fill="var(--color-local)" radius={4} />
         <Bar dataKey="remote" fill="var(--color-remote)" radius={4} />
       </BarChart>

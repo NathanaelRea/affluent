@@ -1,6 +1,6 @@
 import React, { ReactNode, useState } from "react";
 import { HelpCircle } from "lucide-react";
-import { FieldValues, Path, UseFormReturn } from "react-hook-form";
+import { FieldPath, FieldValues, UseFormReturn } from "react-hook-form";
 import {
   FormField,
   FormItem,
@@ -16,7 +16,7 @@ type FormatType = "money" | "percentage";
 
 type InputRHFProps<T extends FieldValues> = {
   form: UseFormReturn<T>;
-  formKey: Path<T>;
+  formKey: FieldPath<T>;
   label?: ReactNode;
   placeholder?: string;
   type?: FormatType | "number";
@@ -81,7 +81,7 @@ export function InputRHF<T extends FieldValues>({
 
 function parseIntDefault(value: string | undefined) {
   if (value == undefined || value === "") {
-    return undefined;
+    return "";
   }
   const maybeNaN = parseInt(value);
   return isNaN(maybeNaN) ? undefined : maybeNaN;
