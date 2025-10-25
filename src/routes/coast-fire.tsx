@@ -4,7 +4,7 @@ import z from "zod";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { LineChart, Line, XAxis, YAxis, Legend, ReferenceLine } from "recharts";
+import { LineChart, Line, XAxis, YAxis, Legend } from "recharts";
 import {
   Card,
   CardContent,
@@ -248,7 +248,6 @@ function CoastFireChart({ data }: { data: CoastFireForm }) {
     points: chartData,
     isCoastFire,
     coastFireAge,
-    fireAge,
     summary,
   } = calculateCoastFire(data);
 

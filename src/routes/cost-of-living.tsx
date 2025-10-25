@@ -452,7 +452,7 @@ function barChartConfig(localCity: City, remoteCity: City): ChartConfig {
   return {
     local: {
       label: localCity,
-      color: COLORS.cardForeground,
+      color: COLORS.secondaryForegrond,
     },
     remote: {
       label: remoteCity,
@@ -601,7 +601,7 @@ function MoneyBarChart({
             />
           }
         />
-        <ChartLegend content={<ChartLegendContent />} />
+        <ChartLegend content={<ChartLegendContent payload={undefined} />} />
         <Bar dataKey="local" fill="var(--color-local)" radius={4} />
         <Bar dataKey="remote" fill="var(--color-remote)" radius={4} />
       </BarChart>

@@ -310,7 +310,7 @@ function Chart({ parsedData }: { parsedData: ParsedData }) {
                 key={i}
                 isAnimationActive={animationEnabled}
                 dataKey={key}
-                stroke={bankrupt ? COLORS.destructive : COLORS.background}
+                stroke={bankrupt ? COLORS.destructive : `${COLORS.chart5}66`}
                 dot={false}
                 strokeWidth={0.5}
               />
