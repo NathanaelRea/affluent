@@ -31,6 +31,7 @@ import {
 import { InputRHF } from "@/components/InputRHF";
 import ErrorMessage from "@/components/ErrorMessage.tsx";
 import FundDialog from "@/components/FundDialog.tsx";
+import { COLORS } from "@/colors";
 
 export const Route = createFileRoute("/monte-carlo-swr")({
   component: Monte,
@@ -309,7 +310,7 @@ function Chart({ parsedData }: { parsedData: ParsedData }) {
                 key={i}
                 isAnimationActive={animationEnabled}
                 dataKey={key}
-                stroke={bankrupt ? "#FF0000" : "#444444"}
+                stroke={bankrupt ? COLORS.destructive : COLORS.background}
                 dot={false}
                 strokeWidth={0.5}
               />
@@ -320,7 +321,7 @@ function Chart({ parsedData }: { parsedData: ParsedData }) {
               key={dataKey}
               isAnimationActive={animationEnabled}
               dataKey={dataKey}
-              stroke="#00FFFF"
+              stroke={COLORS.primary}
               strokeWidth={2}
               dot={false}
             />

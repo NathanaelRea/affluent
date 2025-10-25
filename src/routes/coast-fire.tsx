@@ -25,6 +25,7 @@ import {
   ChartTooltip,
   ChartTooltipContent,
 } from "@/components/ui/chart";
+import { COLORS } from "@/colors";
 
 export const Route = createFileRoute("/coast-fire")({
   component: RouteComponent,
@@ -257,19 +258,19 @@ function CoastFireChart({ data }: { data: CoastFireForm }) {
     },
     currentTrajectory: {
       label: "Current Trajectory",
-      color: "#f59e0b",
+      color: COLORS.chart1,
     },
     targetAmount: {
       label: "Target Amount",
-      color: "#ef4444",
+      color: COLORS.chart2,
     },
     withContributions: {
       label: "With Contributions",
-      color: "#10b981",
+      color: COLORS.chart3,
     },
     coastPath: {
       label: "Invest → Coast",
-      color: "#6366f1",
+      color: COLORS.chart4,
     },
   } satisfies ChartConfig;
 
@@ -338,30 +339,10 @@ function CoastFireChart({ data }: { data: CoastFireForm }) {
                 />
                 <Legend />
 
-                {fireAge && (
-                  <ReferenceLine
-                    x={fireAge}
-                    stroke="#10b981"
-                    label={{
-                      value: "FIRE",
-                      position: "insideTopLeft",
-                    }}
-                  />
-                )}
-                {!isCoastFire && coastFireAge && (
-                  <ReferenceLine
-                    x={coastFireAge}
-                    stroke="#6366f1"
-                    label={{
-                      value: "Coast FIRE",
-                      position: "insideTopLeft",
-                    }}
-                  />
-                )}
                 <Line
                   type="monotone"
                   dataKey="targetAmount"
-                  stroke="#ef4444"
+                  stroke={COLORS.chart5}
                   strokeWidth={1}
                   name="Target"
                   dot={false}
@@ -369,7 +350,7 @@ function CoastFireChart({ data }: { data: CoastFireForm }) {
                 <Line
                   type="monotone"
                   dataKey="currentTrajectory"
-                  stroke="#f59e0b"
+                  stroke={COLORS.chart4}
                   strokeWidth={2}
                   name="Coast"
                   dot={false}
@@ -378,7 +359,7 @@ function CoastFireChart({ data }: { data: CoastFireForm }) {
                   <Line
                     type="monotone"
                     dataKey="coastPath"
-                    stroke="#6366f1"
+                    stroke={COLORS.chart1}
                     strokeWidth={2}
                     name="Invest → Coast"
                     dot={false}
@@ -387,7 +368,7 @@ function CoastFireChart({ data }: { data: CoastFireForm }) {
                 <Line
                   type="monotone"
                   dataKey="withContributions"
-                  stroke="#10b981"
+                  stroke={COLORS.chart2}
                   strokeWidth={2}
                   name="Only Invest"
                   dot={false}

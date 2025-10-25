@@ -41,6 +41,7 @@ import { InputRHF, InputWithFormat } from "@/components/InputRHF";
 import { ComboboxRHF } from "@/components/ComboboxRHF";
 import { TooltipHelp } from "@/components/TooltipHelp";
 import StatBox from "@/components/StatBox";
+import { COLORS } from "@/colors";
 
 export const Route = createFileRoute("/cost-of-living")({
   component: CostOfLivingWrapped,
@@ -451,11 +452,11 @@ function barChartConfig(localCity: City, remoteCity: City): ChartConfig {
   return {
     local: {
       label: localCity,
-      color: "#FFFFFF",
+      color: COLORS.cardForeground,
     },
     remote: {
       label: remoteCity,
-      color: "#00FFFF",
+      color: COLORS.primary,
     },
   } satisfies ChartConfig;
 }
