@@ -43,8 +43,8 @@ export const Route = createRootRoute({
                 <GithubIcon />
               </a>
               <span className="text-xs text-muted-foreground">
-                For informational purposes only. Data is stored locally in your
-                browser.
+                For informational purposes only. Data is not transmitted, just
+                stored locally in your browser.
               </span>
             </div>
           </footer>

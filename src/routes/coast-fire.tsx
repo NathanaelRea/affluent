@@ -257,19 +257,15 @@ function CoastFireChart({ data }: { data: CoastFireForm }) {
     },
     currentTrajectory: {
       label: "Current Trajectory",
-      color: COLORS.chart1,
     },
     targetAmount: {
       label: "Target Amount",
-      color: COLORS.chart2,
     },
     withContributions: {
       label: "With Contributions",
-      color: COLORS.chart3,
     },
     coastPath: {
       label: "Invest → Coast",
-      color: COLORS.chart4,
     },
   } satisfies ChartConfig;
 
@@ -281,12 +277,12 @@ function CoastFireChart({ data }: { data: CoastFireForm }) {
             <CardTitle className="flex items-center gap-2">
               Coast FIRE Projection
               {isCoastFire && (
-                <Badge variant="default" className="bg-green-500">
+                <Badge variant="default" className="bg-green-500/75">
                   Already Coast FIRE! 🎉
                 </Badge>
               )}
               {!isCoastFire && coastFireAge && (
-                <Badge variant="secondary">
+                <Badge variant="outline" className="bg-primary/50">
                   Coast FIRE at age {coastFireAge}
                 </Badge>
               )}
@@ -316,7 +312,16 @@ function CoastFireChart({ data }: { data: CoastFireForm }) {
               />
             </div>
             <ChartContainer config={config} className="h-96 w-full">
-              <LineChart data={chartData}>
+              <LineChart
+                data={chartData}
+                style={{
+                  top: 0,
+                  left: 0,
+                  right: 0,
+                  bottom: 0,
+                  padding: "0.5rem",
+                }}
+              >
                 <XAxis
                   dataKey="age"
                   label={{
@@ -341,7 +346,7 @@ function CoastFireChart({ data }: { data: CoastFireForm }) {
                 <Line
                   type="monotone"
                   dataKey="targetAmount"
-                  stroke={COLORS.chart5}
+                  stroke={"#FF0000"}
                   strokeWidth={1}
                   name="Target"
                   dot={false}
@@ -349,7 +354,7 @@ function CoastFireChart({ data }: { data: CoastFireForm }) {
                 <Line
                   type="monotone"
                   dataKey="currentTrajectory"
-                  stroke={COLORS.chart4}
+                  stroke={COLORS.chart5}
                   strokeWidth={2}
                   name="Coast"
                   dot={false}
