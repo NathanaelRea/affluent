@@ -16,13 +16,11 @@ export type SocialSecurityInput = {
  * - AIME approximated using total years worked up to retirementAge with zeros to fill to 35 years.
  * - Claiming adjustments: early reduction and delayed credits applied monthly.
  */
-export const estimateAnnualSocialSecurity = (
-  input: SocialSecurityInput,
-): number => {
+export function estimateAnnualSocialSecurity(input: SocialSecurityInput) {
   const FRA = SSA_2024.fullRetirementAge;
-  const TAXABLE_WAGE_BASE_2024 = SSA_2024.taxableWageBase; // 2024 SSA wage base
-  const BEND_POINT_1_2024 = SSA_2024.bendPoint1Monthly; // monthly
-  const BEND_POINT_2_2024 = SSA_2024.bendPoint2Monthly; // monthly
+  const taxableWageBase = SSA_2024.taxableWageBase; // 2024 SSA wage base
+  const bendPoint1 = SSA_2024.bendPoint1Monthly; // monthly
+  const bentPoint2 = SSA_2024.bendPoint2Monthly; // monthly
 
   const claimAge = input.claimAge ?? input.retirementAge;
   const workStartAge = input.workStartAge ?? 22;
@@ -35,7 +33,7 @@ export const estimateAnnualSocialSecurity = (
     return 0;
   }
 
-  const cappedIncome = Math.min(input.annualIncome, TAXABLE_WAGE_BASE_2024);
+  const cappedIncome = Math.min(input.annualIncome, taxableWageBase);
 
   // Years with covered earnings by retirement
   const yearsWorkedAtRetirement = Math.max(
@@ -48,12 +46,12 @@ export const estimateAnnualSocialSecurity = (
   const aimeMonthly = totalCoveredEarnings / (yearsUsedInAverage * 12);
 
   // Primary Insurance Amount (PIA) at FRA (monthly)
-  const firstPortion = Math.min(aimeMonthly, BEND_POINT_1_2024);
+  const firstPortion = Math.min(aimeMonthly, bendPoint1);
   const secondPortion = Math.min(
-    Math.max(aimeMonthly - BEND_POINT_1_2024, 0),
-    BEND_POINT_2_2024 - BEND_POINT_1_2024,
+    Math.max(aimeMonthly - bendPoint1, 0),
+    bentPoint2 - bendPoint1,
   );
-  const thirdPortion = Math.max(aimeMonthly - BEND_POINT_2_2024, 0);
+  const thirdPortion = Math.max(aimeMonthly - bentPoint2, 0);
 
   const piaMonthly =
     0.9 * firstPortion + 0.32 * secondPortion + 0.15 * thirdPortion;
@@ -78,4 +76,4 @@ export const estimateAnnualSocialSecurity = (
 
   if (!Number.isFinite(adjustedMonthly) || adjustedMonthly <= 0) return 0;
   return adjustedMonthly * 12;
-};
+}
