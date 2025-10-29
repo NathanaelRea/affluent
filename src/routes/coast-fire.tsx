@@ -257,19 +257,15 @@ function CoastFireChart({ data }: { data: CoastFireForm }) {
     },
     currentTrajectory: {
       label: "Current Trajectory",
-      color: COLORS.chart1,
     },
     targetAmount: {
       label: "Target Amount",
-      color: COLORS.chart2,
     },
     withContributions: {
       label: "With Contributions",
-      color: COLORS.chart3,
     },
     coastPath: {
       label: "Invest → Coast",
-      color: COLORS.chart4,
     },
   } satisfies ChartConfig;
 
@@ -341,7 +337,7 @@ function CoastFireChart({ data }: { data: CoastFireForm }) {
                 <Line
                   type="monotone"
                   dataKey="targetAmount"
-                  stroke={COLORS.chart5}
+                  stroke={"#FF0000"}
                   strokeWidth={1}
                   name="Target"
                   dot={false}
@@ -349,7 +345,7 @@ function CoastFireChart({ data }: { data: CoastFireForm }) {
                 <Line
                   type="monotone"
                   dataKey="currentTrajectory"
-                  stroke={COLORS.chart4}
+                  stroke={COLORS.chart5}
                   strokeWidth={2}
                   name="Coast"
                   dot={false}
