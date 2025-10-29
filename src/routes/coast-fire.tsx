@@ -277,12 +277,12 @@ function CoastFireChart({ data }: { data: CoastFireForm }) {
             <CardTitle className="flex items-center gap-2">
               Coast FIRE Projection
               {isCoastFire && (
-                <Badge variant="default" className="bg-green-500">
+                <Badge variant="default" className="bg-green-500/75">
                   Already Coast FIRE! 🎉
                 </Badge>
               )}
               {!isCoastFire && coastFireAge && (
-                <Badge variant="secondary">
+                <Badge variant="outline" className="bg-primary/50">
                   Coast FIRE at age {coastFireAge}
                 </Badge>
               )}
