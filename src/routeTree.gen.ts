@@ -9,11 +9,17 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as RetirementPlanningRouteImport } from './routes/retirement-planning'
 import { Route as MonteCarloSwrRouteImport } from './routes/monte-carlo-swr'
 import { Route as CostOfLivingRouteImport } from './routes/cost-of-living'
 import { Route as CoastFireRouteImport } from './routes/coast-fire'
 import { Route as IndexRouteImport } from './routes/index'
 
+const RetirementPlanningRoute = RetirementPlanningRouteImport.update({
+  id: '/retirement-planning',
+  path: '/retirement-planning',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const MonteCarloSwrRoute = MonteCarloSwrRouteImport.update({
   id: '/monte-carlo-swr',
   path: '/monte-carlo-swr',
@@ -40,12 +46,14 @@ export interface FileRoutesByFullPath {
   '/coast-fire': typeof CoastFireRoute
   '/cost-of-living': typeof CostOfLivingRoute
   '/monte-carlo-swr': typeof MonteCarloSwrRoute
+  '/retirement-planning': typeof RetirementPlanningRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/coast-fire': typeof CoastFireRoute
   '/cost-of-living': typeof CostOfLivingRoute
   '/monte-carlo-swr': typeof MonteCarloSwrRoute
+  '/retirement-planning': typeof RetirementPlanningRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -53,13 +61,30 @@ export interface FileRoutesById {
   '/coast-fire': typeof CoastFireRoute
   '/cost-of-living': typeof CostOfLivingRoute
   '/monte-carlo-swr': typeof MonteCarloSwrRoute
+  '/retirement-planning': typeof RetirementPlanningRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/coast-fire' | '/cost-of-living' | '/monte-carlo-swr'
+  fullPaths:
+    | '/'
+    | '/coast-fire'
+    | '/cost-of-living'
+    | '/monte-carlo-swr'
+    | '/retirement-planning'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/coast-fire' | '/cost-of-living' | '/monte-carlo-swr'
-  id: '__root__' | '/' | '/coast-fire' | '/cost-of-living' | '/monte-carlo-swr'
+  to:
+    | '/'
+    | '/coast-fire'
+    | '/cost-of-living'
+    | '/monte-carlo-swr'
+    | '/retirement-planning'
+  id:
+    | '__root__'
+    | '/'
+    | '/coast-fire'
+    | '/cost-of-living'
+    | '/monte-carlo-swr'
+    | '/retirement-planning'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -67,10 +92,18 @@ export interface RootRouteChildren {
   CoastFireRoute: typeof CoastFireRoute
   CostOfLivingRoute: typeof CostOfLivingRoute
   MonteCarloSwrRoute: typeof MonteCarloSwrRoute
+  RetirementPlanningRoute: typeof RetirementPlanningRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/retirement-planning': {
+      id: '/retirement-planning'
+      path: '/retirement-planning'
+      fullPath: '/retirement-planning'
+      preLoaderRoute: typeof RetirementPlanningRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/monte-carlo-swr': {
       id: '/monte-carlo-swr'
       path: '/monte-carlo-swr'
@@ -107,6 +140,7 @@ const rootRouteChildren: RootRouteChildren = {
   CoastFireRoute: CoastFireRoute,
   CostOfLivingRoute: CostOfLivingRoute,
   MonteCarloSwrRoute: MonteCarloSwrRoute,
+  RetirementPlanningRoute: RetirementPlanningRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
