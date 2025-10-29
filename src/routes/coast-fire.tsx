@@ -312,7 +312,16 @@ function CoastFireChart({ data }: { data: CoastFireForm }) {
               />
             </div>
             <ChartContainer config={config} className="h-96 w-full">
-              <LineChart data={chartData}>
+              <LineChart
+                data={chartData}
+                style={{
+                  top: 0,
+                  left: 0,
+                  right: 0,
+                  bottom: 0,
+                  padding: "0.5rem",
+                }}
+              >
                 <XAxis
                   dataKey="age"
                   label={{
