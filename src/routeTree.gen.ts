@@ -8,97 +8,130 @@
 // You should NOT make any changes in this file as it will be overwritten.
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
-import { Route as rootRouteImport } from './routes/__root'
-import { Route as MonteCarloSwrRouteImport } from './routes/monte-carlo-swr'
-import { Route as CostOfLivingRouteImport } from './routes/cost-of-living'
-import { Route as CoastFireRouteImport } from './routes/coast-fire'
-import { Route as IndexRouteImport } from './routes/index'
+import { Route as rootRouteImport } from "./routes/__root";
+import { Route as RetirementPlanningRouteImport } from "./routes/retirement-planning";
+import { Route as MonteCarloSwrRouteImport } from "./routes/monte-carlo-swr";
+import { Route as CostOfLivingRouteImport } from "./routes/cost-of-living";
+import { Route as CoastFireRouteImport } from "./routes/coast-fire";
+import { Route as IndexRouteImport } from "./routes/index";
 
+const RetirementPlanningRoute = RetirementPlanningRouteImport.update({
+  id: "/retirement-planning",
+  path: "/retirement-planning",
+  getParentRoute: () => rootRouteImport,
+} as any);
 const MonteCarloSwrRoute = MonteCarloSwrRouteImport.update({
-  id: '/monte-carlo-swr',
-  path: '/monte-carlo-swr',
+  id: "/monte-carlo-swr",
+  path: "/monte-carlo-swr",
   getParentRoute: () => rootRouteImport,
-} as any)
+} as any);
 const CostOfLivingRoute = CostOfLivingRouteImport.update({
-  id: '/cost-of-living',
-  path: '/cost-of-living',
+  id: "/cost-of-living",
+  path: "/cost-of-living",
   getParentRoute: () => rootRouteImport,
-} as any)
+} as any);
 const CoastFireRoute = CoastFireRouteImport.update({
-  id: '/coast-fire',
-  path: '/coast-fire',
+  id: "/coast-fire",
+  path: "/coast-fire",
   getParentRoute: () => rootRouteImport,
-} as any)
+} as any);
 const IndexRoute = IndexRouteImport.update({
-  id: '/',
-  path: '/',
+  id: "/",
+  path: "/",
   getParentRoute: () => rootRouteImport,
-} as any)
+} as any);
 
 export interface FileRoutesByFullPath {
-  '/': typeof IndexRoute
-  '/coast-fire': typeof CoastFireRoute
-  '/cost-of-living': typeof CostOfLivingRoute
-  '/monte-carlo-swr': typeof MonteCarloSwrRoute
+  "/": typeof IndexRoute;
+  "/coast-fire": typeof CoastFireRoute;
+  "/cost-of-living": typeof CostOfLivingRoute;
+  "/monte-carlo-swr": typeof MonteCarloSwrRoute;
+  "/retirement-planning": typeof RetirementPlanningRoute;
 }
 export interface FileRoutesByTo {
-  '/': typeof IndexRoute
-  '/coast-fire': typeof CoastFireRoute
-  '/cost-of-living': typeof CostOfLivingRoute
-  '/monte-carlo-swr': typeof MonteCarloSwrRoute
+  "/": typeof IndexRoute;
+  "/coast-fire": typeof CoastFireRoute;
+  "/cost-of-living": typeof CostOfLivingRoute;
+  "/monte-carlo-swr": typeof MonteCarloSwrRoute;
+  "/retirement-planning": typeof RetirementPlanningRoute;
 }
 export interface FileRoutesById {
-  __root__: typeof rootRouteImport
-  '/': typeof IndexRoute
-  '/coast-fire': typeof CoastFireRoute
-  '/cost-of-living': typeof CostOfLivingRoute
-  '/monte-carlo-swr': typeof MonteCarloSwrRoute
+  __root__: typeof rootRouteImport;
+  "/": typeof IndexRoute;
+  "/coast-fire": typeof CoastFireRoute;
+  "/cost-of-living": typeof CostOfLivingRoute;
+  "/monte-carlo-swr": typeof MonteCarloSwrRoute;
+  "/retirement-planning": typeof RetirementPlanningRoute;
 }
 export interface FileRouteTypes {
-  fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/coast-fire' | '/cost-of-living' | '/monte-carlo-swr'
-  fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/coast-fire' | '/cost-of-living' | '/monte-carlo-swr'
-  id: '__root__' | '/' | '/coast-fire' | '/cost-of-living' | '/monte-carlo-swr'
-  fileRoutesById: FileRoutesById
+  fileRoutesByFullPath: FileRoutesByFullPath;
+  fullPaths:
+    | "/"
+    | "/coast-fire"
+    | "/cost-of-living"
+    | "/monte-carlo-swr"
+    | "/retirement-planning";
+  fileRoutesByTo: FileRoutesByTo;
+  to:
+    | "/"
+    | "/coast-fire"
+    | "/cost-of-living"
+    | "/monte-carlo-swr"
+    | "/retirement-planning";
+  id:
+    | "__root__"
+    | "/"
+    | "/coast-fire"
+    | "/cost-of-living"
+    | "/monte-carlo-swr"
+    | "/retirement-planning";
+  fileRoutesById: FileRoutesById;
 }
 export interface RootRouteChildren {
-  IndexRoute: typeof IndexRoute
-  CoastFireRoute: typeof CoastFireRoute
-  CostOfLivingRoute: typeof CostOfLivingRoute
-  MonteCarloSwrRoute: typeof MonteCarloSwrRoute
+  IndexRoute: typeof IndexRoute;
+  CoastFireRoute: typeof CoastFireRoute;
+  CostOfLivingRoute: typeof CostOfLivingRoute;
+  MonteCarloSwrRoute: typeof MonteCarloSwrRoute;
+  RetirementPlanningRoute: typeof RetirementPlanningRoute;
 }
 
-declare module '@tanstack/react-router' {
+declare module "@tanstack/react-router" {
   interface FileRoutesByPath {
-    '/monte-carlo-swr': {
-      id: '/monte-carlo-swr'
-      path: '/monte-carlo-swr'
-      fullPath: '/monte-carlo-swr'
-      preLoaderRoute: typeof MonteCarloSwrRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/cost-of-living': {
-      id: '/cost-of-living'
-      path: '/cost-of-living'
-      fullPath: '/cost-of-living'
-      preLoaderRoute: typeof CostOfLivingRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/coast-fire': {
-      id: '/coast-fire'
-      path: '/coast-fire'
-      fullPath: '/coast-fire'
-      preLoaderRoute: typeof CoastFireRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/': {
-      id: '/'
-      path: '/'
-      fullPath: '/'
-      preLoaderRoute: typeof IndexRouteImport
-      parentRoute: typeof rootRouteImport
-    }
+    "/retirement-planning": {
+      id: "/retirement-planning";
+      path: "/retirement-planning";
+      fullPath: "/retirement-planning";
+      preLoaderRoute: typeof RetirementPlanningRouteImport;
+      parentRoute: typeof rootRouteImport;
+    };
+    "/monte-carlo-swr": {
+      id: "/monte-carlo-swr";
+      path: "/monte-carlo-swr";
+      fullPath: "/monte-carlo-swr";
+      preLoaderRoute: typeof MonteCarloSwrRouteImport;
+      parentRoute: typeof rootRouteImport;
+    };
+    "/cost-of-living": {
+      id: "/cost-of-living";
+      path: "/cost-of-living";
+      fullPath: "/cost-of-living";
+      preLoaderRoute: typeof CostOfLivingRouteImport;
+      parentRoute: typeof rootRouteImport;
+    };
+    "/coast-fire": {
+      id: "/coast-fire";
+      path: "/coast-fire";
+      fullPath: "/coast-fire";
+      preLoaderRoute: typeof CoastFireRouteImport;
+      parentRoute: typeof rootRouteImport;
+    };
+    "/": {
+      id: "/";
+      path: "/";
+      fullPath: "/";
+      preLoaderRoute: typeof IndexRouteImport;
+      parentRoute: typeof rootRouteImport;
+    };
   }
 }
 
@@ -107,7 +140,8 @@ const rootRouteChildren: RootRouteChildren = {
   CoastFireRoute: CoastFireRoute,
   CostOfLivingRoute: CostOfLivingRoute,
   MonteCarloSwrRoute: MonteCarloSwrRoute,
-}
+  RetirementPlanningRoute: RetirementPlanningRoute,
+};
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
-  ._addFileTypes<FileRouteTypes>()
+  ._addFileTypes<FileRouteTypes>();

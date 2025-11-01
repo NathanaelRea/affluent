@@ -31,6 +31,11 @@ const components: LinkMeta[] = [
     href: "/coast-fire",
     description: "Calculate time until coast fire, and beyond.",
   },
+  {
+    title: "Retirement Planning",
+    href: "/retirement-planning",
+    description: "Basic retirement calculator",
+  },
 ];
 
 export function NavMenu() {
