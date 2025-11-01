@@ -1,6 +1,6 @@
 import { InputRHF } from "@/components/InputRHF";
 import { createFileRoute } from "@tanstack/react-router";
-import z from "zod";
+import { z } from "zod";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -18,7 +18,7 @@ import { Badge } from "@/components/ui/badge";
 import { formatMoney } from "@/lib/utils";
 import { estimateAnnualSocialSecurity } from "@/lib/socialSecurity";
 import StatBox from "@/components/StatBox";
-import { AnimatePresence, motion } from "framer-motion";
+import { AnimatePresence, motion } from "motion/react";
 import {
   ChartConfig,
   ChartContainer,
