@@ -1,7 +1,13 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useForm } from "react-hook-form";
-import { ReactElement, useState } from "react";
-import z from "zod";
+import {
+  createContext,
+  ReactElement,
+  ReactNode,
+  useContext,
+  useState,
+} from "react";
+import { z } from "zod";
 import { Car, HeartPulse, TreePalm } from "lucide-react";
 import { zodResolver } from "@hookform/resolvers/zod";
 
@@ -62,6 +68,20 @@ function RouteComponent() {
   const [nav, setNav] = useState<Nav | null>(mainNav[0]);
   const [subNav, setSubNav] = useState<Nav | null>(null);
 
+  const components = [
+    <Blueprint />,
+    <Investments />,
+    <FamilyForm />,
+    <GoalForm />,
+    <RetirementComparisons />,
+    <RetirementWithdrawRate />,
+    <ProposeChanges />,
+    <StressTest />,
+    <CashFlowSummary />,
+    <GoalIcon type="health" />,
+  ];
+  console.warn(components);
+
   return (
     <div className="flex flex-col gap-4">
       <div className="flex flex-col gap-2 bg-accent/50 p-4">
@@ -106,6 +126,9 @@ function RouteComponent() {
       </div>
       {nav?.label}
       {subNav?.label}
+      <MainProvider>
+        <div>hi</div>
+      </MainProvider>
     </div>
   );
 }
@@ -118,13 +141,118 @@ function Investments() {
     concentration: z.string(),
     taxAllocation: z.string(),
   });
+  const form = useForm({
+    resolver: zodResolver(investSchema),
+  });
+  console.warn(form);
+
+  type InvestedColumns = {
+    year: number;
+    ages: string;
+    beginning: number;
+    plannedSavings: number;
+    employerMatchOther: number;
+    plannedDistribution: number;
+    netCashFlow: number;
+    portfolioReturn: number;
+    endingBalance: number;
+  };
+  const idk: InvestedColumns | null = null;
+  console.warn(idk);
+
+  return null;
 }
 
-function Blueprint({ main }: { main: Main }) {
+const DEFAULT_CONTEXT: Main = {
+  people: [
+    {
+      id: "",
+      savings: {
+        "401k": {
+          end: "Client Retirement",
+          ownerPersonId: "",
+          match: {},
+          start: {
+            type: "",
+            month: "Jan",
+            year: 0,
+          },
+          target: "Maximum Contribution",
+        },
+        IRA: {
+          ownerPersonId: "",
+          start: {
+            type: "",
+            month: "Jan",
+            year: 0,
+          },
+          end: "Client Retirement",
+          target: "Maximum Contribution",
+        },
+      },
+      age: 0,
+      firstName: "",
+      lastName: "",
+      income: {
+        annualSalary: 0,
+        socialSecurity: {
+          alreadyReceiving: false,
+          estimatedBenefit: "Based on SS statement value",
+          filing: "FRA",
+          monthlyBenefitFromStatement: 0,
+          startAgeFromStatement: "FRA",
+        },
+      },
+      relationship: "Client",
+      goals: [],
+    },
+  ],
+  investments: {
+    cash: 0,
+    emMarketEquity: 0,
+    intlBonds: 0,
+    intlEquity: 0,
+    other: 0,
+    realEstate: 0,
+    usBonds: 0,
+    usEquity: 0,
+  },
+};
+
+const mainContext = createContext({
+  data: DEFAULT_CONTEXT,
+  // eslint-disable-next-line
+  setData: (_: Main) => undefined,
+});
+
+function useMainContext() {
+  return useContext(mainContext);
+}
+
+function MainProvider({ children }: { children: ReactNode }) {
+  const [main, setMain] = useState<Main>(DEFAULT_CONTEXT);
+  return (
+    <mainContext.Provider
+      value={{
+        data: main,
+        setData: (d) => {
+          setMain(d);
+          return undefined;
+        },
+      }}
+    >
+      {children}
+    </mainContext.Provider>
+  );
+}
+
+function Blueprint() {
   const nw = 0;
 
-  function calc(a: any) {
-    return 0;
+  const { data: main } = useMainContext();
+
+  function calc(a: string | undefined) {
+    return a;
   }
 
   return (
@@ -135,8 +263,8 @@ function Blueprint({ main }: { main: Main }) {
           <div>
             <span>{p.firstName}</span>
             <span>{p.age}</span>
-            <span>{calc(p.savings["401k"])}</span>
-            <span>{calc(p.savings["IRA"])}</span>
+            <span>{calc(p.savings["401k"]?.ownerPersonId)}</span>
+            <span>{calc(p.savings["IRA"]?.ownerPersonId)}</span>
             {/* accounts, assets? */}
           </div>
         ))}
@@ -149,6 +277,7 @@ function FamilyForm() {
   const form = useForm({
     resolver: zodResolver(familySchema),
   });
+  console.warn(form);
   return null;
 }
 
@@ -156,6 +285,7 @@ function GoalForm() {
   const form = useForm({
     resolver: zodResolver(goalSchema),
   });
+  console.warn(form);
   return null;
 }
 
@@ -170,7 +300,7 @@ const yearSchema = z.number().min(MIN_YEAR).max(MAX_YEAR);
 const monthSchema = z.union([z.literal("Jan")]);
 
 const smStringSchema = z.string().min(0).max(50);
-const lgStringSchema = z.string().min(0).max(255);
+//const lgStringSchema = z.string().min(0).max(255);
 
 const healthEstimateSchema = z.object({
   type: z.union([z.literal("Detailed"), z.literal("Approximate")]),
@@ -228,40 +358,33 @@ function GoalIcon({ type }: { type: GoalType }): ReactElement {
 }
 const goalSchema = z.discriminatedUnion("goal", [
   z.object({
+    type: goalTypeSchema,
     goal: z.literal("retirementAge"),
     age: ageSchema,
   }),
   z.object({
+    type: goalTypeSchema,
     goal: z.literal("livingEpenses"),
     monthlyExpense: moneySchema,
   }),
   z.object({
+    type: goalTypeSchema,
     goal: z.literal("health"),
     annualHealthCost: healthEstimateSchema,
   }),
   z.object({
+    type: goalTypeSchema,
     goal: z.literal("lifestyle"),
     anualAmount: goalMoneySchema,
     label: smStringSchema,
   }),
   z.object({
+    type: goalTypeSchema,
     goal: z.literal("gift"),
     anualAmount: giftMoneySchema,
     label: smStringSchema,
   }),
 ]);
-
-type InvestedColumns = {
-  year: number;
-  ages: string;
-  beginning: number;
-  plannedSavings: number;
-  employerMatchOther: number;
-  plannedDistribution: number;
-  netCashFlow: number;
-  portfolioReturn: number;
-  endingBalance: number;
-};
 
 function StressTest() {
   // recharts line, compare current and proposed
@@ -293,19 +416,15 @@ const idkMatchSchema = z.object({
   flat: flatMatchScheama.optional(),
 });
 
-const retirement401kSchema = z.object({
-  ownerPersonId: z.string(),
-  target: z.union([z.literal("Maximum Contribution")]),
-  start: savingsStartSchema,
-  end: savingEndSchema,
-  match: idkMatchSchema,
-});
-
 const retirementIRASchema = z.object({
   ownerPersonId: z.string(),
   target: z.union([z.literal("Maximum Contribution")]),
   start: savingsStartSchema,
   end: savingEndSchema,
+});
+
+const retirement401kSchema = retirementIRASchema.extend({
+  match: idkMatchSchema,
 });
 
 const savingsSchema = z.object({
@@ -394,6 +513,8 @@ function CashFlowSummary() {
     spendUnsavedCashFlows: number;
     netFlows: number;
   };
+  const idk: cashFlowColumns | null = null;
+  console.warn(idk);
 
   return null;
 }
