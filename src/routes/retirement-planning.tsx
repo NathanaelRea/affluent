@@ -65,36 +65,44 @@ function RouteComponent() {
   return (
     <div className="flex flex-col gap-4">
       <div className="flex flex-col gap-2 bg-accent/50 p-4">
-        <div className="flex gap-4 group">
+        <ul className="flex gap-4 group/root">
           {mainNav.map((n) => (
-            <button
-              onClick={() => setNav((v) => (v?.label == n.label ? null : n))}
-              className="group-hover:opacity-50 cursor-pointer hover:opacity-100 hover:text-primary transition-all duration-200"
-            >
-              {n.label}
-            </button>
+            <li className="group/nav">
+              <button
+                onClick={() => setNav((v) => (v?.label == n.label ? null : n))}
+                className="group-hover/root:opacity-50 group-hover/nav:opacity-50 group-hover/subnav:opacity-50 cursor-pointer hover:opacity-100 hover:text-primary transition-all duration-200"
+              >
+                {n.label}
+              </button>
+            </li>
           ))}
-        </div>
-        <div className="flex gap-4 group">
+        </ul>
+        <ul className="flex gap-4 group">
           {nav?.children?.map((n) => (
-            <button
-              onClick={() => setSubNav((v) => (v?.label == n.label ? null : n))}
-              className="group-hover:opacity-50 cursor-pointer hover:opacity-100 hover:text-primary transition-all duration-200"
-            >
-              {n.label}
-            </button>
+            <li className="group/subnav">
+              <button
+                onClick={() =>
+                  setSubNav((v) => (v?.label == n.label ? null : n))
+                }
+                className="group-hover/nav:opacity-50 group-hover/subnav:opacity-50 cursor-pointer hover:opacity-100 hover:text-primary transition-all duration-200"
+              >
+                {n.label}
+              </button>
+            </li>
           ))}
-        </div>
-        <div className="flex gap-4 group">
+        </ul>
+        <ul className="flex gap-4 group">
           {subNav?.children?.map((n) => (
-            <button
-              disabled
-              className="group-hover:opacity-50 cursor-pointer hover:opacity-100 hover:text-primary transition-all duration-200"
-            >
-              {n.label}
-            </button>
+            <li>
+              <button
+                disabled
+                className="group-hover:opacity-50 cursor-pointer hover:opacity-100 hover:text-primary transition-all duration-200"
+              >
+                {n.label}
+              </button>
+            </li>
           ))}
-        </div>
+        </ul>
       </div>
       {nav?.label}
       {subNav?.label}
