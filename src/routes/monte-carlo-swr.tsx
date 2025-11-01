@@ -32,6 +32,7 @@ import { InputRHF } from "@/components/InputRHF";
 import ErrorMessage from "@/components/ErrorMessage.tsx";
 import FundDialog from "@/components/FundDialog.tsx";
 import { COLORS } from "@/colors";
+import { useMemo } from "react";
 
 export const Route = createFileRoute("/monte-carlo-swr")({
   component: Monte,
@@ -104,7 +105,8 @@ function Monte() {
     });
   };
 
-  const portfolio = form.watch("portfolio");
+  // eslint-disable-next-line
+  const portfolio = useMemo(() => form.watch("portfolio"), [form.watch]);
 
   return (
     <>
